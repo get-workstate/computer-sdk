@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Layout } from "@/components/layout";
 import { EnvironmentPage } from "@/pages/environment";
 import { EnvironmentsPage } from "@/pages/environments";
+import { IntegrationsPage } from "@/pages/integrations";
 import { LivePage } from "@/pages/live";
 import { RunPage } from "@/pages/run";
 import { RunsPage } from "@/pages/runs";
@@ -13,6 +14,7 @@ export function App() {
       <Routes>
         <Route path="/" element={<Layout><EnvironmentsPage /></Layout>} />
         <Route path="/runs" element={<Layout><RunsPage /></Layout>} />
+        <Route path="/integrations" element={<Layout><IntegrationsPage /></Layout>} />
         <Route path="/runs/:id" element={<Layout><RunPage /></Layout>} />
         <Route path="/env/:name" element={<Layout><EnvironmentPage /></Layout>} />
         <Route path="/live/:name" element={<Layout width="wide"><LivePage /></Layout>} />

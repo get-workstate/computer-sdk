@@ -1,11 +1,31 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { Link, useParams } from "react-router-dom";
+import { EnvironmentConfigFields } from "@/components/environment-config";
 import { RunForm } from "@/components/run-form";
 import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ApiError, api, type EnvironmentDetail, type FileEntry, type RunRecord } from "@/lib/api";
+import { Dialog } from "@/components/ui/dialog";
+import {
+  ApiError,
+  api,
+  type EnvironmentConfig,
+  type EnvironmentDetail,
+  type FileEntry,
+  type IntegrationInfo,
+  type RunRecord,
+} from "@/lib/api";
 import { formatTime } from "@/lib/format";
+
+const SETUP_KEYS = ["runtime", "model", "credentials", "mailbox", "payments"] as const;
+
+function configStrings(config: Record<string, unknown>): EnvironmentConfig {
+  const out: EnvironmentConfig = {};
+  for (const [key, value] of Object.entries(config)) {
+    if (typeof value === "string") out[key] = value;
+  }
+  return out;
+}
 
 export function EnvironmentPage() {
   const { name = "" } = useParams();
@@ -18,6 +38,47 @@ export function EnvironmentPage() {
   const [filePath, setFilePath] = useState<string | null>(null);
   const [fileBody, setFileBody] = useState("");
   const [fileError, setFileError] = useState<string | null>(null);
+  const [integrations, setIntegrations] = useState<IntegrationInfo[]>([]);
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState<EnvironmentConfig>({});
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.integrations()
+      .then((payload) => setIntegrations(payload.integrations))
+      .catch(() => setIntegrations([]));
+  }, []);
+
+  function openEditor() {
+    if (!detail) return;
+    setDraft(configStrings(detail.config));
+    setSaveError(null);
+    setEditing(true);
+  }
+
+  async function saveConfig(event: FormEvent) {
+    event.preventDefault();
+    if (!detail) return;
+    setSaving(true);
+    setSaveError(null);
+    const patch: EnvironmentConfig = {};
+    for (const key of SETUP_KEYS) {
+      const next = draft[key];
+      const current = typeof detail.config[key] === "string" ? (detail.config[key] as string) : null;
+      const value = typeof next === "string" && next.trim() !== "" ? next.trim() : null;
+      if (value !== current) patch[key] = value;
+    }
+    try {
+      if (Object.keys(patch).length > 0) await api.updateEnvironment(detail.name, patch);
+      setEditing(false);
+      load();
+    } catch (cause) {
+      setSaveError(cause instanceof ApiError ? cause.message : "Could not save the setup.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function load() {
     setState("loading");
@@ -88,6 +149,35 @@ export function EnvironmentPage() {
         <Button render={<Link to={`/live/${detail.name}`} />}>Open live view</Button>
       </div>
       <RunForm initialEnv={detail.name} />
+      <section className="rounded-2xl border border-line bg-card p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h2 className="font-medium">Setup</h2>
+            <p className="mt-1 text-sm text-muted">Where this environment runs and which services the agent can reach.</p>
+          </div>
+          <Button type="button" variant="outline" size="sm" onClick={openEditor}>
+            Edit setup
+          </Button>
+        </div>
+        <dl className="mt-3 grid gap-x-6 gap-y-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+          <SetupRow label="Runtime" value={typeof detail.config.runtime === "string" ? detail.config.runtime : "local"} />
+          <SetupRow label="Default model" value={typeof detail.config.model === "string" ? detail.config.model : "server default"} />
+          <SetupRow label="Credentials" value={typeof detail.config.credentials === "string" ? detail.config.credentials : "none"} />
+          <SetupRow label="Mailbox" value={typeof detail.config.mailbox === "string" ? detail.config.mailbox : "none"} />
+          <SetupRow label="Payments" value={detail.config.payments === "agentcard" ? "Agentcard (approval required)" : "none"} />
+          <SetupRow
+            label="Session"
+            value={detail.session ? `${detail.session.status} on ${detail.session.runtime}` : "not started"}
+            extra={
+              detail.session?.liveViewUrl ? (
+                <a className="text-accent hover:underline" href={detail.session.liveViewUrl} target="_blank" rel="noreferrer">
+                  Provider live view
+                </a>
+              ) : null
+            }
+          />
+        </dl>
+      </section>
       <section className="grid gap-4 lg:grid-cols-2">
         <div className="rounded-2xl border border-line bg-card p-4">
           <h2 className="font-medium">Skills</h2>
@@ -152,6 +242,37 @@ export function EnvironmentPage() {
           ))}
         </ul>
       </section>
+      <Dialog
+        open={editing}
+        onOpenChange={setEditing}
+        title="Environment setup"
+        description="Changing the runtime stops the current session. The next run starts on the new one."
+      >
+        <form onSubmit={saveConfig} className="space-y-3">
+          <EnvironmentConfigFields idPrefix="edit-env" value={draft} onChange={setDraft} integrations={integrations} />
+          {saveError ? <p className="text-sm text-bad">{saveError}</p> : null}
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" onClick={() => setEditing(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving}>
+              {saving ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </div>
+  );
+}
+
+function SetupRow({ label, value, extra }: { label: string; value: string; extra?: ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <dt className="text-xs text-muted">{label}</dt>
+      <dd className="truncate font-mono text-xs" title={value}>
+        {value}
+        {extra ? <span className="ml-2 font-sans">{extra}</span> : null}
+      </dd>
     </div>
   );
 }

@@ -13,6 +13,7 @@ export function Layout({ children, width = "default" }: { children: ReactNode; w
           <nav className="flex items-center gap-1 text-sm">
             <TopLink to="/">Environments</TopLink>
             <TopLink to="/runs">Runs</TopLink>
+            <TopLink to="/integrations">Integrations</TopLink>
           </nav>
           <p className="ml-auto hidden font-mono text-[11px] text-muted sm:block">local control plane</p>
         </div>

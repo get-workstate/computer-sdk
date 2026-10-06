@@ -74,9 +74,25 @@ export interface FileEntry {
 
 export interface EnvironmentDetail extends EnvironmentRecord {
   skills: Skill[];
-  session: { id: string; status: string } | null;
+  session: { id: string; status: string; runtime: string; liveViewUrl?: string; cdpUrl?: string } | null;
   currentRun: RunRecord | null;
 }
+
+export type IntegrationKind = "runtime" | "model" | "secrets" | "mail" | "payments";
+
+export interface IntegrationInfo {
+  id: string;
+  kind: IntegrationKind;
+  name: string;
+  description: string;
+  envVars: string[];
+  configured: boolean;
+  docsUrl?: string;
+  select: string;
+  status: "verified" | "untested";
+}
+
+export type EnvironmentConfig = Record<string, string | null>;
 
 export interface AdapterInfo {
   id: string;
@@ -148,7 +164,11 @@ export const api = {
   adapters: () => request<{ defaultModel: string; adapters: AdapterInfo[] }>("/api/adapters"),
   environments: () => request<EnvironmentRecord[]>("/api/environments"),
   environment: (name: string) => request<EnvironmentDetail>(`/api/environments/${encodeURIComponent(name)}`),
-  createEnvironment: (name: string) => request<EnvironmentRecord>("/api/environments", { method: "POST", body: JSON.stringify({ name }) }),
+  integrations: () => request<{ integrations: IntegrationInfo[]; configKeys: string[] }>("/api/integrations"),
+  createEnvironment: (name: string, config: EnvironmentConfig = {}) =>
+    request<EnvironmentRecord>("/api/environments", { method: "POST", body: JSON.stringify({ name, config }) }),
+  updateEnvironment: (name: string, config: EnvironmentConfig) =>
+    request<EnvironmentRecord>(`/api/environments/${encodeURIComponent(name)}`, { method: "PATCH", body: JSON.stringify({ config }) }),
   createRun: (name: string, prompt: string, model: string) =>
     request<RunRecord>(`/api/environments/${encodeURIComponent(name)}/runs`, {
       method: "POST",

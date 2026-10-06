@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ApiError, api, type EnvironmentRecord } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { EnvironmentConfigFields, compactConfig } from "@/components/environment-config";
+import { ApiError, api, type EnvironmentConfig, type EnvironmentRecord, type IntegrationInfo } from "@/lib/api";
 import { formatTime } from "@/lib/format";
 
 export function EnvironmentsPage() {
@@ -15,6 +17,8 @@ export function EnvironmentsPage() {
   const [error, setError] = useState("");
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [config, setConfig] = useState<EnvironmentConfig>({});
+  const [integrations, setIntegrations] = useState<IntegrationInfo[]>([]);
   const [creating, setCreating] = useState(false);
   const [createError, setCreateError] = useState<string | null>(null);
 
@@ -33,6 +37,9 @@ export function EnvironmentsPage() {
 
   useEffect(() => {
     load();
+    api.integrations()
+      .then((payload) => setIntegrations(payload.integrations))
+      .catch(() => setIntegrations([]));
   }, []);
 
   async function createEnvironment(event: FormEvent) {
@@ -40,9 +47,10 @@ export function EnvironmentsPage() {
     setCreating(true);
     setCreateError(null);
     try {
-      await api.createEnvironment(name.trim());
+      await api.createEnvironment(name.trim(), compactConfig(config));
       setOpen(false);
       setName("");
+      setConfig({});
       load();
     } catch (cause) {
       setCreateError(cause instanceof ApiError ? cause.message : "Could not create that environment.");
@@ -96,6 +104,13 @@ export function EnvironmentsPage() {
                 </div>
                 <p className="text-xs text-muted">{formatTime(environment.createdAt)}</p>
               </div>
+              <div className="mt-3 flex flex-wrap gap-1">
+                <Badge>runtime: {typeof environment.config.runtime === "string" ? environment.config.runtime : "local"}</Badge>
+                {typeof environment.config.model === "string" ? <Badge>model: {environment.config.model}</Badge> : null}
+                {typeof environment.config.credentials === "string" ? <Badge>1Password</Badge> : null}
+                {typeof environment.config.mailbox === "string" ? <Badge>AgentMail</Badge> : null}
+                {environment.config.payments === "agentcard" ? <Badge>Agentcard</Badge> : null}
+              </div>
               <div className="mt-4 flex gap-2">
                 <Button variant="outline" size="sm" render={<Link to={`/env/${environment.name}`} />}>
                   <FolderOpen className="size-3.5" />
@@ -110,7 +125,12 @@ export function EnvironmentsPage() {
           ))}
         </div>
       ) : null}
-      <Dialog open={open} onOpenChange={setOpen} title="New environment" description="A name is enough. The browser profile and workspace are created on first use.">
+      <Dialog
+        open={open}
+        onOpenChange={setOpen}
+        title="New environment"
+        description="A name is enough. Pick a runtime and services here, or change them later from the environment page."
+      >
         <form onSubmit={createEnvironment} className="space-y-3">
           <div className="space-y-1.5">
             <Label htmlFor="new-env">Name</Label>
@@ -123,6 +143,7 @@ export function EnvironmentsPage() {
               autoFocus
             />
           </div>
+          <EnvironmentConfigFields idPrefix="new-env" value={config} onChange={setConfig} integrations={integrations} />
           {createError ? <p className="text-sm text-bad">{createError}</p> : null}
           <div className="flex justify-end gap-2">
             <Button type="button" variant="ghost" onClick={() => setOpen(false)}>

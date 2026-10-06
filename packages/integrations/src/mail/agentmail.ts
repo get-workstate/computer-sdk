@@ -31,8 +31,8 @@ export function extractCode(text: string): string | null {
 
 /**
  * AgentMail inbox for an environment. Set AGENTMAIL_API_KEY on the server and point the
- * environment at an inbox (config "mailbox": inbox id or address). Without a mailbox, one is
- * created on first use and the id is logged.
+ * environment at an inbox (config "mailbox": inbox id or address). With "new" or no reference,
+ * an inbox is created on first use and the id is logged.
  * https://docs.agentmail.to
  */
 export class AgentMailbox implements Mailbox {
@@ -61,7 +61,7 @@ export class AgentMailbox implements Mailbox {
     if (!this.inbox) {
       this.inbox = (async () => {
         const { base, headers } = this.auth();
-        if (this.inboxRef) {
+        if (this.inboxRef && this.inboxRef !== "new") {
           if (this.inboxRef.includes("@")) {
             const listed = await jsonRequest<{ inboxes?: AgentMailInbox[] }>("AgentMail", `${base}/v0/inboxes?limit=100`, { headers });
             const match = (listed.inboxes ?? []).find((inbox) => inbox.email === this.inboxRef || inbox.inbox_id === this.inboxRef);
