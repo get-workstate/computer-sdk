@@ -78,7 +78,7 @@ export function RunForm({ initialEnv = "acme" }: { initialEnv?: string }) {
             id="env-name"
             value={name}
             onChange={(event) => setName(event.target.value)}
-            pattern="[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,63}"
+            pattern={"[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,63}"}
             title="Letters, numbers, dots, underscores, or hyphens. Up to 64 characters."
             required
           />

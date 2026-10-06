@@ -36,7 +36,7 @@ export function useLive(envName: string) {
         session?: string;
         message?: string;
       };
-      if (message.run) setRun(message.run);
+      if ("run" in message) setRun(message.run ?? null);
       if (message.type === "frame" && message.data) {
         setFrame({
           src: `data:image/jpeg;base64,${message.data}`,

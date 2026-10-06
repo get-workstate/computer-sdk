@@ -118,7 +118,7 @@ export function EnvironmentsPage() {
               id="new-env"
               value={name}
               onChange={(event) => setName(event.target.value)}
-              pattern="[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,63}"
+              pattern={"[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,63}"}
               required
               autoFocus
             />

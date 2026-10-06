@@ -38,15 +38,22 @@ WORKSTATE_HOST=0.0.0.0 WORKSTATE_PORT=4780 node packages/cli/dist/bin.js start -
 - Playwright's page object cannot be exposed as a `page` getter; `Computer.page()` is the method and `currentPage` is the getter.
 - `runtime-local` tsconfig needs the DOM lib for `extract` page functions.
 - Do not log `skill_created` from both the adapter and the server wrapper.
-- Filter the `node:sqlite` ExperimentalWarning in `quiet.ts` or the CLI is noisy on Node 22.14.
-- The environment-name `pattern` attribute must escape the dash (`\-.`) or browsers reject it under the `v` flag.
+- Filter the `node:sqlite` ExperimentalWarning in `quiet.ts`, and `require("node:sqlite")` inside `openDatabase()` rather than a static import. A static import runs before `quiet.ts` and the warning still prints.
+- The environment-name `pattern` attribute uses the `v` flag. A trailing hyphen is invalid, and a doubled backslash is too. The DOM value needs one backslash: `[a-zA-Z0-9._\-]`. In JSX that is `{"[a-zA-Z0-9][a-zA-Z0-9._\\-]{0,63}"}`.
 - Mobile live view needs a touch keyboard (`aria-label="Keyboard"` / `"Text to type"`). Clicks are viewport coordinates on the screenshot image.
 - Do not `pkill -f` the server command; it can kill the shell that issued it. Use the tmux session `workstate-server`.
 - `server.closeAllConnections()` before `server.close()`, or a CLI `run` hangs on keep-alive sockets.
+- The live WebSocket sends `run: null` when nothing is active. The client must apply that null. Ignoring a falsy `run` leaves the panel stuck on "Needs you" after the run succeeds.
 
 ## Verified
 
-Not yet on this machine. After `pnpm test` and a browser pass of the invoice flow (desktop and mobile), update this section.
+On this machine, 2026-10-06:
+
+- 14 unit tests passed (`pnpm test`).
+- Desktop 1366×900: started "Download the latest invoice" on `desk-acme` from the console, live view reached `waiting_for_human`, clicked the password field on the JPEG, typed `workstate`, signed in, returned control. Result saved `/workspace/invoices/INV-1042.txt` and skill `download-latest-invoice`. A second run on the same environment succeeded with no human step.
+- Mobile 390×844: the same handoff on `mobile-acme`. Orders showed in the frame, Return to agent and the touch keyboard were visible, and the panel ended on Succeeded with the invoice path.
+- Environment name pattern accepts `desk-acme` and rejects `bad name` with no console error.
+- OpenAI, Anthropic, and the Docker runtime were not executed (no keys, no Docker).
 
 ## Next
 
