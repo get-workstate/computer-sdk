@@ -2,9 +2,8 @@ import { existsSync, mkdirSync } from "node:fs";
 import { readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { DockerRuntimeProvider } from "@workstate/runtime-docker";
-import { LocalRuntimeProvider } from "@workstate/runtime-local";
-import type { RuntimeProvider } from "@workstate/sdk";
+import { createRuntimeProvider, runtimeIdFor } from "@workstate/integrations";
+import type { EnvironmentRecord, RuntimeProvider } from "@workstate/sdk";
 import { Hono } from "hono";
 import { registerApi } from "./api.js";
 import { loadConfig, VERSION, type Config } from "./config.js";
@@ -38,9 +37,9 @@ export function findWebUiDir(explicit?: string): string | null {
   return null;
 }
 
-export function createRuntime(config: Config): RuntimeProvider {
-  if ((process.env.WORKSTATE_RUNTIME ?? "local") === "docker") return new DockerRuntimeProvider();
-  return new LocalRuntimeProvider(config.headless);
+/** Pick the runtime for an environment: its config.runtime, then WORKSTATE_RUNTIME, then local. */
+export function createRuntime(config: Config, env?: Pick<EnvironmentRecord, "config">): RuntimeProvider {
+  return createRuntimeProvider(runtimeIdFor(env?.config), { headless: config.headless });
 }
 
 export function createApp(configInput?: Partial<Config>): { app: Hono; ctx: AppContext; dispose: () => Promise<void> } {
@@ -50,7 +49,7 @@ export function createApp(configInput?: Partial<Config>): { app: Hono; ctx: AppC
   db.failInterruptedRuns("Interrupted because the Workstate server restarted.");
   db.stopAllRunningSessions();
   const environments = new EnvironmentStore(db, config);
-  const sessions = new SessionManager(db, createRuntime(config), config.headless);
+  const sessions = new SessionManager(db, (env) => createRuntime(config, env), config.headless);
   const runs = new RunManager(db, environments, sessions, { publicUrl: config.publicUrl });
   const ctx: AppContext = {
     config,

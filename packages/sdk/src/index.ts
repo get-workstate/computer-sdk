@@ -1,6 +1,6 @@
 import { assertEnvironmentName, Environment } from "./environment.js";
 import { HttpClient } from "./http.js";
-import type { EnvironmentRecord } from "./types.js";
+import type { EnvironmentRecord, IntegrationDescriptor } from "./types.js";
 
 export const DEFAULT_SERVER_URL = "http://127.0.0.1:4780";
 
@@ -23,6 +23,11 @@ export class Workstate {
   listEnvironments(): Promise<EnvironmentRecord[]> {
     return this.client.get<EnvironmentRecord[]>("/api/environments");
   }
+
+  /** Every runtime, model adapter, secrets, mail, and payments integration the server knows, with configured status. */
+  integrations(): Promise<{ integrations: IntegrationDescriptor[]; configKeys: Record<string, string> }> {
+    return this.client.get("/api/integrations");
+  }
 }
 
 export { Environment, RemoteHuman } from "./environment.js";
@@ -38,8 +43,18 @@ export {
 export type {
   AdapterRunInput,
   AdapterRunResult,
+  CardDetails,
+  CardSummary,
   Computer,
+  Credential,
   CuaAdapter,
+  IntegrationDescriptor,
+  IntegrationKind,
+  Mailbox,
+  MailMessage,
+  Payments,
+  RunIntegrations,
+  SecretsProvider,
   EnvironmentPaths,
   EnvironmentRecord,
   FileEntry,

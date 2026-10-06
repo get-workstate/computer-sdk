@@ -1,0 +1,33 @@
+{
+  "name": "@workstate/integrations",
+  "version": "0.1.0",
+  "description": "Out-of-the-box Workstate integrations: hosted browsers and sandboxes as runtimes, 1Password secrets, AgentMail inboxes, and Agentcard payments.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@workstate/runtime-docker": "workspace:*",
+    "@workstate/runtime-local": "workspace:*",
+    "@workstate/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "@1password/sdk": "*",
+    "@daytona/sdk": "*",
+    "e2b": "*"
+  },
+  "peerDependenciesMeta": {
+    "@1password/sdk": { "optional": true },
+    "@daytona/sdk": { "optional": true },
+    "e2b": { "optional": true }
+  }
+}

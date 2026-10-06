@@ -1,4 +1,4 @@
-import type { Computer, Files, Human } from "@workstate/sdk";
+import type { Computer, Credential, Files, Human } from "@workstate/sdk";
 
 export type SkillStep =
   | { op: "open"; url: string }
@@ -16,6 +16,8 @@ export interface StepContext {
   serverUrl: string;
   abortSignal?: AbortSignal;
   log?: (kind: string, message: string, data?: unknown) => void;
+  /** Saved login for this environment; tried before asking a person. */
+  credentials?: () => Promise<Credential>;
 }
 
 const STEP_OPS = new Set(["open", "ensureLoggedIn", "extract", "openVar", "saveText", "wait", "output"]);
@@ -130,6 +132,21 @@ export async function runSteps(steps: SkillStep[], ctx: StepContext): Promise<{ 
         break;
       }
       case "ensureLoggedIn": {
+        if (ctx.credentials && (await onLoginPage(ctx.computer))) {
+          try {
+            const credential = await ctx.credentials();
+            await ctx.computer.fill(
+              'input[autocomplete="username"], input[type="email"], input[name*="user" i], input[name*="email" i], input[type="text"]',
+              credential.username,
+            );
+            await ctx.computer.fill('input[type="password"]', credential.password);
+            await ctx.computer.key("Enter");
+            await ctx.computer.wait(1500);
+            ctx.log?.("log", "Signed in with the environment's saved credentials");
+          } catch (error) {
+            ctx.log?.("log", `Saved credentials did not work: ${error instanceof Error ? error.message : String(error)}`);
+          }
+        }
         if (await onLoginPage(ctx.computer)) {
           await ctx.human.request({
             kind: "login",

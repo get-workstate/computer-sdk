@@ -129,6 +129,10 @@ export const scriptedAdapter: CuaAdapter = {
       serverUrl: input.serverUrl,
       abortSignal: input.abortSignal,
       log: input.log,
+      credentials:
+        input.integrations?.secrets && input.integrations.credentialRef
+          ? () => input.integrations!.secrets!.credential(input.integrations!.credentialRef!)
+          : undefined,
     });
     if (plan.persist) {
       await input.skills.write({

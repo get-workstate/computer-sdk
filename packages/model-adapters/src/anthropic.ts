@@ -1,10 +1,10 @@
 import type { AdapterRunResult, CuaAdapter } from "@workstate/sdk";
-import { executeTool, performComputerAction, sharedTools } from "./tools.js";
+import { errorPayload, isFinish, maxSteps } from "./limits.js";
+import { executeTool, performComputerAction, toolsFor } from "./tools.js";
 
-const MAX_STEPS = 16;
-
-function modelId(model: string): string {
-  return model.replace(/^anthropic\//, "") || "claude-sonnet-4-5";
+export function anthropicModelId(model: string): string {
+  const stripped = model.replace(/^anthropic\//, "").trim();
+  return stripped && stripped !== "anthropic" ? stripped : "claude-sonnet-4-5";
 }
 
 interface ToolUseBlock {
@@ -15,19 +15,35 @@ interface ToolUseBlock {
   text?: string;
 }
 
+/**
+ * Anthropic Messages API with the computer tool (computer-use-2025-01-24 beta) plus Workstate's
+ * function tools. Screenshots are JPEG at the environment viewport.
+ */
 export const anthropicAdapter: CuaAdapter = {
   name: "anthropic",
-  description: "Anthropic Messages API with the computer-use-2025-01-24 beta. Untested without an API key.",
+  description: "Anthropic Claude computer use through the Messages API (model ids anthropic/<model>, default claude-sonnet-4-5).",
   available: () => Boolean(process.env.ANTHROPIC_API_KEY),
   async run(input): Promise<AdapterRunResult> {
     const apiKey = process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) throw new Error("Anthropic adapter selected but ANTHROPIC_API_KEY is not set.");
+    if (!apiKey) throw new Error("Anthropic adapter selected but ANTHROPIC_API_KEY is not set on the Workstate server.");
+    const baseUrl = (process.env.ANTHROPIC_BASE_URL ?? "https://api.anthropic.com").replace(/\/$/, "");
+    const first = await input.computer.screenshot();
+    const tools = toolsFor(input);
 
-    const messages: unknown[] = [{ role: "user", content: input.prompt }];
+    const messages: unknown[] = [
+      {
+        role: "user",
+        content: [
+          { type: "text", text: input.prompt },
+          { type: "image", source: { type: "base64", media_type: first.mimeType, data: first.data } },
+        ],
+      },
+    ];
+    const budget = maxSteps();
 
-    for (let step = 0; step < MAX_STEPS; step += 1) {
+    for (let step = 0; step < budget; step += 1) {
       if (input.abortSignal.aborted) throw new Error("Run cancelled");
-      const response = await fetch("https://api.anthropic.com/v1/messages", {
+      const response = await fetch(`${baseUrl}/v1/messages`, {
         method: "POST",
         headers: {
           "x-api-key": apiKey,
@@ -36,17 +52,17 @@ export const anthropicAdapter: CuaAdapter = {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          model: modelId(input.model),
+          model: anthropicModelId(input.model),
           max_tokens: 4096,
           system: input.systemPrompt,
           tools: [
             {
               type: "computer_20250124",
               name: "computer",
-              display_width_px: 1280,
-              display_height_px: 800,
+              display_width_px: first.width,
+              display_height_px: first.height,
             },
-            ...sharedTools.map((tool) => ({
+            ...tools.map((tool) => ({
               name: tool.name,
               description: tool.description,
               input_schema: tool.parameters,
@@ -72,34 +88,41 @@ export const anthropicAdapter: CuaAdapter = {
       const results: unknown[] = [];
       for (const toolUse of toolUses) {
         if (toolUse.name === "computer") {
-          await performComputerAction(input, toolUse.input);
+          input.log("action", String(toolUse.input?.action ?? "action"), toolUse.input);
+          let failure: string | null = null;
+          try {
+            await performComputerAction(input, toolUse.input);
+          } catch (error) {
+            failure = error instanceof Error ? error.message : String(error);
+          }
           const shot = await input.computer.screenshot();
           results.push({
             type: "tool_result",
             tool_use_id: toolUse.id,
+            is_error: Boolean(failure),
             content: [
-              {
-                type: "image",
-                source: { type: "base64", media_type: "image/jpeg", data: shot.data },
-              },
+              ...(failure ? [{ type: "text", text: failure }] : []),
+              { type: "image", source: { type: "base64", media_type: shot.mimeType, data: shot.data } },
             ],
           });
           continue;
         }
-        const result = await executeTool(String(toolUse.name), toolUse.input ?? {}, input);
-        if (result && typeof result === "object" && "finish" in result && (result as { finish?: boolean }).finish) {
-          const finished = result as { text?: string; artifacts?: string[] };
-          return { text: finished.text ?? "Finished.", artifacts: finished.artifacts };
+        input.log("tool", String(toolUse.name), toolUse.input);
+        let result: unknown;
+        let isError = false;
+        try {
+          result = await executeTool(String(toolUse.name), toolUse.input ?? {}, input);
+        } catch (error) {
+          if ((error as { code?: string }).code === "cancelled") throw error;
+          result = errorPayload(error);
+          isError = true;
         }
-        results.push({
-          type: "tool_result",
-          tool_use_id: toolUse.id,
-          content: JSON.stringify(result),
-        });
+        if (isFinish(result)) return { text: result.text ?? "Finished.", artifacts: result.artifacts };
+        results.push({ type: "tool_result", tool_use_id: toolUse.id, is_error: isError, content: JSON.stringify(result) });
       }
       messages.push({ role: "user", content: results });
     }
 
-    throw new Error("Anthropic adapter stopped after 16 steps without finishing.");
+    throw new Error(`Anthropic adapter stopped after ${budget} steps without finishing. Raise WORKSTATE_MAX_STEPS to allow more.`);
   },
 };

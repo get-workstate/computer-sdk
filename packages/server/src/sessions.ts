@@ -16,28 +16,49 @@ interface ActiveSession {
   runtime: RuntimeSession;
 }
 
+export interface SessionSnapshot {
+  id: string;
+  status: string;
+  runtime: string;
+  liveViewUrl?: string;
+  cdpUrl?: string;
+}
+
+export type ProviderResolver = (env: EnvironmentRecord) => RuntimeProvider;
+
 export class SessionManager {
   private readonly active = new Map<string, ActiveSession>();
   private readonly starting = new Map<string, Promise<SessionRecord>>();
   private readonly startingInfo = new Map<string, SessionRecord>();
   private readonly listeners = new Set<() => void>();
+  private readonly resolveProvider: ProviderResolver;
 
   constructor(
     private readonly db: Db,
-    private readonly provider: RuntimeProvider,
+    provider: RuntimeProvider | ProviderResolver,
     private readonly headless: boolean,
-  ) {}
+  ) {
+    this.resolveProvider = typeof provider === "function" ? provider : () => provider;
+  }
 
   onChange(listener: () => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
-  snapshot(environmentId: string): { id: string; status: string } | null {
+  snapshot(environmentId: string): SessionSnapshot | null {
     const active = this.active.get(environmentId);
-    if (active) return { id: active.record.id, status: active.record.status };
+    if (active) {
+      return {
+        id: active.record.id,
+        status: active.record.status,
+        runtime: active.record.runtime,
+        liveViewUrl: active.runtime.liveViewUrl,
+        cdpUrl: active.runtime.cdpUrl,
+      };
+    }
     const starting = this.startingInfo.get(environmentId);
-    if (starting) return { id: starting.id, status: "starting" };
+    if (starting) return { id: starting.id, status: "starting", runtime: starting.runtime };
     return null;
   }
 
@@ -56,11 +77,12 @@ export class SessionManager {
       return ready;
     }
 
+    const provider = this.resolveProvider(env);
     const record: SessionRecord = {
       id: createId("ses"),
       environmentId: env.id,
       status: "starting",
-      runtime: this.provider.name,
+      runtime: provider.name,
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
@@ -70,11 +92,12 @@ export class SessionManager {
 
     const promise = (async () => {
       try {
-        const runtime = await this.provider.start({
+        const runtime = await provider.start({
           id: env.id,
           name: env.name,
           paths: env.paths,
           headless: this.headless,
+          config: env.config,
         });
         const running: SessionRecord = { ...record, status: "running", updatedAt: nowIso() };
         this.db.updateSessionStatus(running.id, "running");

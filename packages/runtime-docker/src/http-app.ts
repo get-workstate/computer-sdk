@@ -27,6 +27,7 @@ export function createDaemonApp(): Hono {
         id: "container",
         name: "container",
         headless: params.headless !== false,
+        config: {},
         paths: {
           root: "/environment",
           files: String(params.filesDir ?? "/environment/files"),
@@ -70,6 +71,8 @@ export function createDaemonApp(): Hono {
         return session.computer.text();
       case "computer.extract":
         return session.computer.extract(String(params.selector ?? ""));
+      case "computer.fill":
+        return session.computer.fill(String(params.selector ?? ""), String(params.text ?? ""));
       case "shell.exec":
         return session.shell.exec(String(params.command ?? ""), {
           cwd: typeof params.cwd === "string" ? params.cwd : undefined,

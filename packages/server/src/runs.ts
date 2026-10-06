@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
+import { integrationsForEnvironment } from "@workstate/integrations";
 import { buildSystemPrompt, defaultModel, resolveAdapter } from "@workstate/model-adapters";
 import {
   createId,
@@ -60,7 +61,7 @@ export class RunManager {
       environmentName: env.name,
       sessionId: null,
       prompt,
-      model: input.model?.trim() || defaultModel(),
+      model: input.model?.trim() || (typeof env.config.model === "string" && env.config.model.trim()) || defaultModel(),
       status: "queued",
       error: null,
       result: null,
@@ -249,7 +250,7 @@ export class RunManager {
     if (!adapter.available()) {
       this.fail(
         runId,
-        `${adapter.name} is not available. Set the API key or choose the local scripted model.`,
+        `The ${adapter.name} adapter is not configured on this server (model ${initial.model}). Set its API key, or choose local/scripted. See /api/integrations for what each adapter needs.`,
       );
       return;
     }
@@ -264,6 +265,13 @@ export class RunManager {
       this.update(runId, { sessionId: session.record.id });
       const skills = new FilesystemSkills(env.paths.skills);
       const listed = await skills.list();
+      const integrations = integrationsForEnvironment(env.config);
+      const enabled = [
+        integrations.secrets ? `credentials via ${integrations.secrets.name}` : null,
+        integrations.mail ? `mailbox via ${integrations.mail.name}` : null,
+        integrations.payments ? `payments via ${integrations.payments.name}` : null,
+      ].filter(Boolean);
+      if (enabled.length > 0) this.emit(runId, "log", `Integrations: ${enabled.join(", ")}`);
       const result = await adapter.run({
         prompt: initial.prompt,
         model: initial.model,
@@ -273,7 +281,7 @@ export class RunManager {
         human: this.createHuman(runId),
         skills: this.wrapSkills(runId, skills),
         skillsPath: "/workstate/skills",
-        environment: { id: env.id, name: env.name },
+        environment: { id: env.id, name: env.name, config: env.config },
         run: {
           id: runId,
           sessionId: session.record.id,
@@ -285,6 +293,8 @@ export class RunManager {
           skills: listed,
         }),
         serverUrl: this.options.publicUrl,
+        cdpUrl: session.runtime.cdpUrl,
+        integrations,
         log: (kind, message, data) => {
           if (kind === "skill_created") return;
           this.emit(runId, kind, message, data);
@@ -384,6 +394,7 @@ export class RunManager {
       page: () => call(() => computer.page()),
       text: () => call(() => computer.text()),
       extract: (selector) => call(() => computer.extract(selector)),
+      fill: (selector, text) => call(() => computer.fill(selector, text)),
     };
   }
 

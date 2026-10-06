@@ -1,8 +1,42 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { RUNTIME_IDS, isRuntimeId } from "@workstate/integrations";
 import { createId, ENV_NAME_RE, nowIso, type EnvironmentPaths, type EnvironmentRecord } from "@workstate/sdk";
 import type { Config } from "./config.js";
 import type { Db, StoredEnvironment } from "./db.js";
+
+const STRING_KEYS = [
+  "model",
+  "credentials",
+  "mailbox",
+  "payments",
+  "anchorProfile",
+  "browserbaseContextId",
+  "kernelProfile",
+  "e2bTemplate",
+  "daytonaImage",
+  "daytonaSnapshot",
+];
+
+function invalid(message: string): Error {
+  return Object.assign(new Error(message), { status: 400, code: "invalid_config" });
+}
+
+export function validateConfig(config: Record<string, unknown>): Record<string, unknown> {
+  if (config.runtime !== undefined && !isRuntimeId(config.runtime)) {
+    throw invalid(`Unknown runtime "${String(config.runtime)}". Choose one of ${RUNTIME_IDS.join(", ")}.`);
+  }
+  for (const key of STRING_KEYS) {
+    if (config[key] !== undefined && typeof config[key] !== "string") throw invalid(`config.${key} must be a string.`);
+  }
+  if (typeof config.credentials === "string" && !/^op:\/\/[^/]+\/[^/]+/.test(config.credentials)) {
+    throw invalid('config.credentials must be a 1Password reference like "op://Vault/Item".');
+  }
+  if (config.payments !== undefined && config.payments !== "agentcard") {
+    throw invalid('config.payments must be "agentcard".');
+  }
+  return config;
+}
 
 export class EnvironmentStore {
   constructor(
@@ -47,11 +81,14 @@ export class EnvironmentStore {
       );
     }
     const existing = this.db.getEnvironmentByName(name);
-    if (existing) return this.hydrate(existing);
+    if (existing) {
+      // Creating an existing environment with new settings updates it in place.
+      return Object.keys(config).length > 0 ? this.updateConfig(existing.id, config) : this.hydrate(existing);
+    }
     const stored: StoredEnvironment = {
       id: createId("env"),
       name,
-      config,
+      config: validateConfig(config),
       createdAt: nowIso(),
     };
     this.db.insertEnvironment(stored);
@@ -65,6 +102,20 @@ export class EnvironmentStore {
       );
     }
     return record;
+  }
+
+  /** Merge a config patch. Null values delete keys. */
+  updateConfig(id: string, patch: Record<string, unknown>): EnvironmentRecord {
+    const existing = this.db.getEnvironmentById(id);
+    if (!existing) throw Object.assign(new Error("Environment not found."), { status: 404, code: "not_found" });
+    const next: Record<string, unknown> = { ...existing.config };
+    for (const [key, value] of Object.entries(patch)) {
+      if (value === null || value === undefined || value === "") delete next[key];
+      else next[key] = value;
+    }
+    const validated = validateConfig(next);
+    this.db.updateEnvironmentConfig(id, validated);
+    return this.hydrate({ ...existing, config: validated });
   }
 
   private hydrate(row: StoredEnvironment): EnvironmentRecord {

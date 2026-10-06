@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@hono/node-server": "^1.19.6",
+    "@workstate/integrations": "workspace:*",
     "@workstate/model-adapters": "workspace:*",
     "@workstate/runtime-docker": "workspace:*",
     "@workstate/runtime-local": "workspace:*",

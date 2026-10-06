@@ -40,16 +40,59 @@ function help(): void {
 Usage:
   workstate start [--host 127.0.0.1] [--port ${DEFAULT_PORT}] [--no-open]
   workstate run [--env acme] [--model local/scripted] [--url http://127.0.0.1:${DEFAULT_PORT}] "prompt"
-  workstate env create <name>
+  workstate env create <name> [--runtime local|docker|anchor|browserbase|steel|kernel|e2b|daytona]
+                              [--model <adapter>/<model>] [--credentials op://Vault/Item]
+                              [--mailbox <agentmail inbox>] [--payments agentcard]
+  workstate env set <name> [same flags as create; --no-<flag> clears a setting]
   workstate env list
   workstate env open <name>
+  workstate integrations [--json]
   workstate live <name>
   workstate skills list --env <name>
   workstate setup
 
 The local scripted model needs no API key. It can download the demo shop invoice,
 summarize Hacker News, or open an explicit URL.
+
+Integrations are selected per environment and read their API keys from the server's
+environment variables. \`workstate integrations\` shows what each one needs.
 `);
+}
+
+const CONFIG_FLAGS = [
+  "runtime",
+  "model",
+  "credentials",
+  "mailbox",
+  "payments",
+  "anchor-profile",
+  "browserbase-context-id",
+  "kernel-profile",
+  "e2b-template",
+  "daytona-image",
+  "daytona-snapshot",
+] as const;
+
+function camel(flag: string): string {
+  return flag.replace(/-([a-z])/g, (_match, letter: string) => letter.toUpperCase());
+}
+
+/** Turn --runtime anchor / --no-credentials style flags into an environment config patch. */
+export function configFromFlags(flags: Flags): Record<string, unknown> {
+  const config: Record<string, unknown> = {};
+  for (const flag of CONFIG_FLAGS) {
+    const value = flags[flag];
+    if (typeof value === "string") config[camel(flag)] = value;
+    else if (value === true && flag === "mailbox") config.mailbox = true;
+    if (flags[`no-${flag}`] === true) config[camel(flag)] = null;
+  }
+  return config;
+}
+
+function describeConfig(config: Record<string, unknown>): string {
+  const entries = Object.entries(config).filter(([, value]) => value !== undefined && value !== null);
+  if (entries.length === 0) return "runtime=local (default)";
+  return entries.map(([key, value]) => `${key}=${String(value)}`).join("  ");
 }
 
 async function serverReachable(url: string): Promise<boolean> {
@@ -151,10 +194,28 @@ async function main(): Promise<void> {
         return;
       }
       if (sub === "create") {
-        if (!name) throw new WorkstateError("Usage: workstate env create <name>", { code: "usage" });
-        const env = await ws.environment(name);
+        if (!name) throw new WorkstateError("Usage: workstate env create <name> [--runtime ...] [--model ...]", { code: "usage" });
+        const env = await ws.environment(name, configFromFlags(flags));
         if (flags.json) printJson(env.record, flags);
-        else console.log(`Created ${env.name} (${env.id})`);
+        else {
+          console.log(`Created ${env.name} (${env.id})`);
+          console.log(`  ${describeConfig(env.record.config)}`);
+        }
+        return;
+      }
+      if (sub === "set") {
+        if (!name) throw new WorkstateError("Usage: workstate env set <name> --runtime anchor | --credentials op://Vault/Item | ...", { code: "usage" });
+        const patch = configFromFlags(flags);
+        if (Object.keys(patch).length === 0) {
+          throw new WorkstateError(`Nothing to change. Flags: ${CONFIG_FLAGS.map((flag) => `--${flag}`).join(", ")}`, { code: "usage" });
+        }
+        const env = await ws.environment(name);
+        const updated = await env.configure(patch);
+        if (flags.json) printJson(updated, flags);
+        else {
+          console.log(`Updated ${updated.name}`);
+          console.log(`  ${describeConfig(updated.config)}`);
+        }
         return;
       }
       if (sub === "open") {
@@ -166,9 +227,42 @@ async function main(): Promise<void> {
         maybeOpen(page, flags);
         return;
       }
-      throw new WorkstateError("Usage: workstate env create|list|open", { code: "usage" });
+      throw new WorkstateError("Usage: workstate env create|set|list|open", { code: "usage" });
     } finally {
       if (sub !== "open") await connected.handle?.close();
+    }
+    return;
+  }
+
+  if (command === "integrations") {
+    const connected = await connect(flags);
+    try {
+      const ws = new Workstate({ url: connected.url });
+      const { integrations } = await ws.integrations();
+      if (flags.json) {
+        printJson(integrations, flags);
+        return;
+      }
+      const kinds: Array<[string, string]> = [
+        ["runtime", "Runtimes (config.runtime)"],
+        ["model", "Models and harnesses (--model)"],
+        ["secrets", "Secrets"],
+        ["mail", "Mail"],
+        ["payments", "Payments"],
+      ];
+      for (const [kind, title] of kinds) {
+        const rows = integrations.filter((item) => item.kind === kind);
+        if (rows.length === 0) continue;
+        console.log(`\n${title}`);
+        for (const item of rows) {
+          const state = item.configured ? "ready" : "needs key";
+          const needs = item.envVars.length > 0 ? `  needs ${item.envVars.join(", ")}` : "";
+          console.log(`  ${item.id.padEnd(16)} ${state.padEnd(10)} ${item.select}${needs}`);
+        }
+      }
+      console.log("");
+    } finally {
+      await connected.handle?.close();
     }
     return;
   }

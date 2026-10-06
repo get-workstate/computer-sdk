@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process";
 import type { RuntimeEnvironment, RuntimeProvider, RuntimeSession } from "@workstate/sdk";
-import { newRemoteSession, rpc } from "./remote-session.js";
+import { newRemoteSession, rpc, waitForDaemon } from "./remote-session.js";
 
 export const DEFAULT_IMAGE = "workstate/runtime:0.1";
 export const DAEMON_PORT = 4790;
@@ -33,22 +33,6 @@ function docker(args: string[]): Promise<CommandResult> {
     });
     child.on("close", (code) => resolve({ stdout, stderr, code: code ?? 1 }));
   });
-}
-
-async function waitForDaemon(base: string): Promise<void> {
-  const started = Date.now();
-  let last = "daemon did not become ready";
-  while (Date.now() - started < 20_000) {
-    try {
-      const response = await fetch(`${base}/healthz`);
-      if (response.ok) return;
-      last = `healthz returned ${response.status}`;
-    } catch (error) {
-      last = error instanceof Error ? error.message : String(error);
-    }
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }
-  throw new Error(`Runtime container did not become ready. ${last}`);
 }
 
 export class DockerRuntimeProvider implements RuntimeProvider {
@@ -96,4 +80,5 @@ export class DockerRuntimeProvider implements RuntimeProvider {
 }
 
 export { createDaemonApp } from "./http-app.js";
-export { RemoteRuntimeSession } from "./remote-session.js";
+export { RemoteRuntimeSession, newRemoteSession, rpc, waitForDaemon } from "./remote-session.js";
+export type { DaemonTarget } from "./remote-session.js";

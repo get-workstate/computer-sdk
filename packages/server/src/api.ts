@@ -1,5 +1,6 @@
+import { ENVIRONMENT_CONFIG_KEYS, describeIntegrations } from "@workstate/integrations";
 import { LocalFiles, LocalShell } from "@workstate/runtime-local";
-import { defaultModel, listAdapters } from "@workstate/model-adapters";
+import { defaultModel, describeAdapters, listAdapters } from "@workstate/model-adapters";
 import type { HumanKind } from "@workstate/sdk";
 import type { Context, Hono } from "hono";
 import type { AppContext } from "./app.js";
@@ -23,7 +24,31 @@ const MODEL_CATALOG = [
     id: "anthropic/claude-sonnet-4-5",
     name: "anthropic",
     label: "Anthropic computer use",
-    description: "Messages API computer-use beta. Needs ANTHROPIC_API_KEY.",
+    description: "Messages API computer use. Needs ANTHROPIC_API_KEY.",
+  },
+  {
+    id: "gemini/gemini-3.8-flash",
+    name: "gemini",
+    label: "Gemini computer use",
+    description: "Gemini API computer_use tool. Needs GEMINI_API_KEY.",
+  },
+  {
+    id: "stagehand/openai/computer-use-preview",
+    name: "stagehand",
+    label: "Stagehand agent",
+    description: "Browserbase Stagehand attached to the environment browser. Needs a model key and the stagehand package.",
+  },
+  {
+    id: "browser-use/cloud",
+    name: "browser-use",
+    label: "Browser Use Cloud",
+    description: "Runs in Browser Use's hosted browser. Needs BROWSER_USE_API_KEY.",
+  },
+  {
+    id: "browser-harness/anthropic/claude-sonnet-4-5",
+    name: "browser-harness",
+    label: "browser-harness",
+    description: "browser-harness CLI on the environment browser, driven by a chat model. Needs the CLI and a model key.",
   },
 ];
 
@@ -41,12 +66,31 @@ export function registerApi(app: Hono, ctx: AppContext): void {
     });
   });
 
+  app.get("/api/integrations", (c) =>
+    c.json({
+      integrations: [...describeIntegrations(), ...describeAdapters()],
+      configKeys: ENVIRONMENT_CONFIG_KEYS,
+    }),
+  );
+
   app.get("/api/environments", (c) => c.json(ctx.environments.list()));
 
   app.post("/api/environments", async (c) => {
     const body = await readJson<{ name?: string; config?: Record<string, unknown> }>(c);
     if (!body.name?.trim()) throw httpError(400, "invalid_name", "Environment name is required.");
     return c.json(ctx.environments.getOrCreate(body.name.trim(), body.config ?? {}), 201);
+  });
+
+  app.patch("/api/environments/:ref", async (c) => {
+    const env = requireEnv(ctx, c.req.param("ref"));
+    const body = await readJson<{ config?: Record<string, unknown> }>(c);
+    if (!body.config || typeof body.config !== "object") throw httpError(400, "invalid_config", "config object is required.");
+    const updated = ctx.environments.updateConfig(env.id, body.config);
+    if (body.config.runtime !== undefined && body.config.runtime !== env.config.runtime) {
+      // The next run starts on the new runtime.
+      await ctx.sessions.stop(env.id);
+    }
+    return c.json(updated);
   });
 
   app.get("/api/environments/:ref", async (c) => {

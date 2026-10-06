@@ -9,7 +9,7 @@
   },
   "packageManager": "pnpm@10.33.3",
   "scripts": {
-    "build:libs": "tsc -p packages/sdk/tsconfig.json && tsc -p packages/model-adapters/tsconfig.json && tsc -p packages/runtime-local/tsconfig.json && tsc -p packages/runtime-docker/tsconfig.json && tsc -p packages/server/tsconfig.json && tsc -p packages/cli/tsconfig.json",
+    "build:libs": "tsc -p packages/sdk/tsconfig.json && tsc -p packages/model-adapters/tsconfig.json && tsc -p packages/runtime-local/tsconfig.json && tsc -p packages/runtime-docker/tsconfig.json && tsc -p packages/integrations/tsconfig.json && tsc -p packages/server/tsconfig.json && tsc -p packages/cli/tsconfig.json",
     "build": "pnpm build:libs && pnpm --filter @workstate/web-ui build",
     "dev": "node scripts/dev.mjs",
     "start": "node packages/cli/dist/bin.js start --no-open",

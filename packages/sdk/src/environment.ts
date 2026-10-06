@@ -90,6 +90,13 @@ export class Environment {
     return this.record.name;
   }
 
+  /** Change integration settings (runtime, model, credentials, mailbox, payments). Null removes a key. */
+  async configure(config: Record<string, unknown>): Promise<EnvironmentRecord> {
+    const updated = await this.client.patch<EnvironmentRecord>(`/api/environments/${encodeURIComponent(this.record.id)}`, { config });
+    Object.assign(this.record, updated);
+    return updated;
+  }
+
   async run(promptOrOptions: string | RunOptions, handlers?: RunHandlers): Promise<RunRecord> {
     const prompt = typeof promptOrOptions === "string" ? promptOrOptions : promptOrOptions.prompt;
     const model = typeof promptOrOptions === "string" ? undefined : promptOrOptions.model;

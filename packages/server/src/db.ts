@@ -118,6 +118,10 @@ export class Db {
       .run(row.id, row.name, JSON.stringify(row.config), row.createdAt);
   }
 
+  updateEnvironmentConfig(id: string, config: Record<string, unknown>): void {
+    this.sqlite.prepare("UPDATE environments SET config = ? WHERE id = ?").run(JSON.stringify(config), id);
+  }
+
   getEnvironmentByName(name: string): StoredEnvironment | null {
     const row = this.sqlite.prepare("SELECT * FROM environments WHERE name = ?").get(name) as EnvRow | undefined;
     return row ? this.mapEnv(row) : null;

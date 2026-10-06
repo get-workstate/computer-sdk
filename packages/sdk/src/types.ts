@@ -46,6 +46,7 @@ export interface Computer {
   page(): Promise<PageInfo>;
   text(): Promise<string>;
   extract(selector: string): Promise<string[]>;
+  fill(selector: string, text: string): Promise<void>;
 }
 
 export interface ShellResult {
@@ -178,6 +179,10 @@ export interface RuntimeSession {
   computer: Computer;
   shell: Shell;
   files: Files;
+  /** Chrome DevTools Protocol endpoint for harnesses that attach to the same browser. */
+  cdpUrl?: string;
+  /** Provider-hosted live view, when the browser runs somewhere else. */
+  liveViewUrl?: string;
   stop(): Promise<void>;
 }
 
@@ -186,11 +191,85 @@ export interface RuntimeEnvironment {
   name: string;
   paths: EnvironmentPaths;
   headless: boolean;
+  config: Record<string, unknown>;
 }
 
 export interface RuntimeProvider {
   name: string;
   start(env: RuntimeEnvironment): Promise<RuntimeSession>;
+}
+
+export interface Credential {
+  username: string;
+  password: string;
+  otp?: string;
+}
+
+export interface SecretsProvider {
+  name: string;
+  configured(): boolean;
+  resolve(ref: string): Promise<string>;
+  credential(ref: string): Promise<Credential>;
+}
+
+export interface MailMessage {
+  id: string;
+  from: string;
+  subject: string;
+  text: string;
+  createdAt: string;
+}
+
+export interface Mailbox {
+  name: string;
+  configured(): boolean;
+  address(): Promise<string>;
+  list(limit?: number): Promise<MailMessage[]>;
+  waitForCode(options?: { timeoutMs?: number; after?: string; from?: string; signal?: AbortSignal }): Promise<{ code: string; message: MailMessage }>;
+}
+
+export interface CardSummary {
+  id: string;
+  last4?: string;
+  expiry?: string;
+  amountCents: number;
+  status?: string;
+}
+
+export interface CardDetails extends CardSummary {
+  number: string;
+  cvv: string;
+}
+
+export interface Payments {
+  name: string;
+  configured(): boolean;
+  createCard(input: { amountCents: number; memo?: string }): Promise<CardSummary>;
+  cardDetails(id: string): Promise<CardDetails>;
+  closeCard(id: string): Promise<void>;
+}
+
+export interface RunIntegrations {
+  secrets?: SecretsProvider;
+  /** 1Password-style reference to the login item for this environment, for example op://Vault/Item. */
+  credentialRef?: string;
+  mail?: Mailbox;
+  payments?: Payments;
+}
+
+export type IntegrationKind = "runtime" | "model" | "secrets" | "mail" | "payments";
+
+export interface IntegrationDescriptor {
+  id: string;
+  kind: IntegrationKind;
+  name: string;
+  description: string;
+  envVars: string[];
+  configured: boolean;
+  docsUrl?: string;
+  /** How to select it: an environment config key, a model id, or an env var. */
+  select: string;
+  status: "verified" | "untested";
 }
 
 export interface AdapterRunInput {
@@ -202,10 +281,12 @@ export interface AdapterRunInput {
   human: Human;
   skills: Skills;
   skillsPath: string;
-  environment: { id: string; name: string };
+  environment: { id: string; name: string; config?: Record<string, unknown> };
   run: { id: string; sessionId: string; liveUrl: string };
   systemPrompt: string;
   serverUrl: string;
+  cdpUrl?: string;
+  integrations?: RunIntegrations;
   log: (kind: string, message: string, data?: unknown) => void;
   abortSignal: AbortSignal;
 }
