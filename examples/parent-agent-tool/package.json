@@ -1,0 +1,11 @@
+{
+  "name": "@workstate/example-parent-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types index.ts"
+  },
+  "dependencies": {
+    "@workstate/sdk": "workspace:*"
+  }
+}

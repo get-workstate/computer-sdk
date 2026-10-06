@@ -1,0 +1,21 @@
+{
+  "name": "@workstate/model-adapters",
+  "version": "0.1.0",
+  "description": "Computer-use adapters for Workstate: scripted, OpenAI, Anthropic, and custom.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@workstate/sdk": "workspace:*"
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "name": "workstate",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Persistent computer environments for AI agents.",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "packageManager": "pnpm@10.33.3",
+  "scripts": {
+    "build:libs": "tsc -p packages/sdk/tsconfig.json && tsc -p packages/model-adapters/tsconfig.json && tsc -p packages/runtime-local/tsconfig.json && tsc -p packages/runtime-docker/tsconfig.json && tsc -p packages/server/tsconfig.json && tsc -p packages/cli/tsconfig.json",
+    "build": "pnpm build:libs && pnpm --filter @workstate/web-ui build",
+    "dev": "node scripts/dev.mjs",
+    "start": "node packages/cli/dist/bin.js start --no-open",
+    "typecheck": "pnpm build:libs && tsc -p packages/web-ui/tsconfig.json --noEmit",
+    "test": "pnpm build:libs && node --experimental-strip-types --test packages/runtime-local/test/paths.test.ts packages/model-adapters/test/scripted.test.ts packages/server/test/runs.test.ts",
+    "clean": "rm -rf packages/*/dist packages/*/*.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "typescript": "~5.9.3"
+  }
+}

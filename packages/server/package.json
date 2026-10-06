@@ -1,0 +1,33 @@
+{
+  "name": "@workstate/server",
+  "version": "0.1.0",
+  "description": "Workstate control plane: HTTP, WebSocket live view, and run state.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "workstate-server": "./dist/bin.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.6",
+    "@workstate/model-adapters": "workspace:*",
+    "@workstate/runtime-docker": "workspace:*",
+    "@workstate/runtime-local": "workspace:*",
+    "@workstate/sdk": "workspace:*",
+    "hono": "^4.10.7",
+    "ws": "^8.18.3"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.18.1"
+  }
+}

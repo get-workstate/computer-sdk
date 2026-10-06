@@ -1,0 +1,22 @@
+{
+  "name": "@workstate/runtime-local",
+  "version": "0.1.0",
+  "description": "In-process Playwright runtime for Workstate environments.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@workstate/sdk": "workspace:*",
+    "playwright": "1.63.0"
+  }
+}
