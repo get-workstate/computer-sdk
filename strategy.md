@@ -19,7 +19,21 @@ WORKSTATE_HOST=0.0.0.0 WORKSTATE_PORT=4780 node packages/cli/dist/bin.js start -
 
 ## Layout
 
-`packages/sdk`, `server`, `runtime-local`, `runtime-docker`, `model-adapters`, `cli` (`workstate`), `web-ui`. Docs in `docs/`. Examples in `examples/`. Tests import `dist/` and run with `node --experimental-strip-types --test`.
+`packages/sdk`, `server`, `runtime-local`, `runtime-docker`, `integrations`, `model-adapters`, `cli` (`workstate`), `web-ui`. Docs in `docs/`. Examples in `examples/`. Tests import `dist/` and run with `node --experimental-strip-types --test`. Build order in `build:libs`: sdk → model-adapters → runtime-local → runtime-docker → integrations → server → cli.
+
+## Integrations (added 2026-10-06)
+
+All in the tree, none run with real keys. Full reference: `docs/integrations.md`.
+
+- Runtimes (`config.runtime`, else `WORKSTATE_RUNTIME`, else `local`): `local`, `docker`, `anchor`, `browserbase`, `steel`, `kernel` (hosted Chromium → `CdpBrowserRuntimeProvider` in runtime-local, Playwright `connectOverCDP`; shell/files on host), `e2b`, `daytona` (runtime image inside the sandbox, `RemoteRuntimeSession` against daemon port 4790 with a `DaemonTarget { base, headers }`).
+- Models (`<adapter>/<model>`): `local/scripted`, `openai/computer-use-preview`, `anthropic/claude-sonnet-4-5`, `gemini/gemini-3.8-flash`, `stagehand/<provider>/<model>` (+ `stagehand-dom/`, `stagehand-hybrid/`), `browser-use/cloud`, `browser-harness/<provider>/<model>`. Stagehand and browser-harness need `input.cdpUrl`; Docker/E2B/Daytona sessions do not expose one yet.
+- Services via env config: `credentials` (op://, 1Password SDK or Connect), `mailbox` (AgentMail id/address/`new`), `payments` (`agentcard`, every card gated on `human.request({kind:"approval"})`). Exposed to model-driven adapters as tools `credentials_fill`, `credentials_fill_otp`, `mail_*`, `card_*` in `model-adapters/src/tools.ts`.
+- Optional SDKs load with `loadOptional()` and fail with an install hint: `e2b`, `@daytona/sdk` (fallback `@daytonaio/sdk`), `@1password/sdk`, `@browserbasehq/stagehand`. Everything else is REST via `jsonRequest()`.
+- `IntegrationSetupError` carries `status: 400`, `code: "integration_not_configured"`, `envVars`. Never fake a success.
+- Registry (`integrations/src/registry.ts`): `RUNTIME_IDS`, `createRuntimeProvider`, `describeIntegrations`, `integrationsForEnvironment`, `ENVIRONMENT_CONFIG_KEYS`. `GET /api/integrations` returns descriptors plus `describeAdapters()` from model-adapters. Statuses are `verified` only for `local` runtime and `local/scripted`; keep Docker `untested` until it has been run.
+- Selection surfaces: `workstate env create|set --runtime --model --credentials --mailbox --payments` (`--no-<flag>` clears), `workstate integrations`, `POST/PATCH /api/environments`, SDK `env.configure()`, console New environment dialog and Edit setup on `/env/:name`, `/integrations` page.
+- Local Chromium is launched with `--remote-debugging-port=0`; the CDP URL is read from `<profileDir>/DevToolsActivePort` so Stagehand/browser-harness can attach to the local runtime. Verified in a real Chromium on this machine.
+- Skipped on purpose: Modal / Fly Machines / Cloudflare sandboxes (Python-first or no fitting JS runtime slot for a browser+daemon image), the browser-use Python library (the cloud API is used instead), VNC-style desktops.
 
 ## Decisions
 
@@ -44,6 +58,10 @@ WORKSTATE_HOST=0.0.0.0 WORKSTATE_PORT=4780 node packages/cli/dist/bin.js start -
 - Do not `pkill -f` the server command; it can kill the shell that issued it. Use the tmux session `workstate-server`.
 - `server.closeAllConnections()` before `server.close()`, or a CLI `run` hangs on keep-alive sockets.
 - The live WebSocket sends `run: null` when nothing is active. The client must apply that null. Ignoring a falsy `run` leaves the panel stuck on "Needs you" after the run succeeds.
+- base-ui `Select.Value` renders the raw value unless `items` is passed to `Select.Root`; the shared `Select` component now passes it so triggers show labels.
+- `RuntimeEnvironment` requires `config`; the Docker daemon's `session.start` passes `config: {}`.
+- `pnpm install --offline` fails on optional peer metadata (`@1password/sdk`); install online.
+- The tmux `workstate-server` session ran node directly; `C-c` ended the session. Start it with a login shell and send the command, then `C-c` + resend to restart.
 
 ## Verified
 
@@ -54,13 +72,15 @@ On this machine, 2026-10-06:
 - Mobile 390×844: the same handoff on `mobile-acme`. Orders showed in the frame, Return to agent and the touch keyboard were visible, and the panel ended on Succeeded with the invoice path.
 - Environment name pattern accepts `desk-acme` and rejects `bad name` with no console error.
 - OpenAI, Anthropic, and the Docker runtime were not executed (no keys, no Docker).
+- Integrations pass: 30 unit tests. Browser QA (desktop 1366×900 and 390×844): `/integrations` lists 18 entries with 3 configured; New environment dialog with runtime/model/credentials/mailbox/payments creates `qa-anchor` with `runtime: anchor`; Edit setup switches to local, clears credentials, sets mailbox `new`; invalid `op://` ref blocked by the input pattern; selects show labels. No console errors. No hosted provider, sandbox, model API, 1Password, AgentMail, or Agentcard call was made.
 
 ## README
 
-Written as the public pitch ("a computer that remembers"). Keep it to what the code does. The "What's in the box" table marks OpenAI, Anthropic, and Docker as included but not yet run; update it when they are verified. Screenshots in `docs/assets/` are real captures from the invoice QA pass. There is no Python SDK, MCP server, or control-plane auth yet; they sit under Roadmap → Next.
+Written as the public pitch ("a computer that remembers"). Keep it to what the code does. The "What's in the box" table marks every integration as included but not yet run; update rows when they are verified. Screenshots in `docs/assets/` are real captures from the invoice QA pass. There is no Python SDK, MCP server, or control-plane auth yet; they sit under Roadmap → Next.
 
 ## Next
 
-- Run the OpenAI and Anthropic adapters against real keys.
-- Build and smoke the Docker runtime somewhere Docker exists.
+- Run each integration with a real key and flip its `status` to `verified` in `registry.ts` / `MODEL_META`.
+- Expose a CDP endpoint from Docker/E2B/Daytona sessions (daemon could proxy the container's Chromium debugging port) so Stagehand and browser-harness work there.
+- Build and smoke the Docker runtime somewhere Docker exists; build the E2B template and Daytona snapshot from the same Dockerfile.
 - Skill matching is tag overlap; a model-written skill is free-form and only the scripted adapter replays the step language.

@@ -91,9 +91,13 @@ first run   →  agent works it out, a person helps with the login
 next run    →  skill matches, saved login still valid, done
 ```
 
-### Bring your own model
+### Bring your own model, browser, and sandbox
 
-Runs go through a model adapter. The default `local/scripted` adapter needs no key. OpenAI and Anthropic computer-use adapters are included. Or write your own: an adapter is `{ name, available(), run() }`.
+Runs go through a model adapter, and sessions go through a runtime provider. The default `local/scripted` adapter needs no key and the default runtime is Chromium on your machine. Adapters for OpenAI, Anthropic, and Gemini computer use, Stagehand, browser-use, and browser-harness are included, and so are runtimes for Anchor Browser, Browserbase, Steel, Kernel, E2B, Daytona, and Docker. Or write your own: an adapter is `{ name, available(), run() }` and a runtime is `{ name, start(environment) }`.
+
+### Logins, inboxes, and cards without leaking them
+
+Point an environment at a 1Password item and the agent can fill a login without ever seeing the password. Give it an AgentMail inbox and it can wait for a verification code. Turn on Agentcard and it can ask a person to approve a single-use card before checkout.
 
 ---
 
@@ -160,11 +164,13 @@ See [`examples/parent-agent-tool`](./examples/parent-agent-tool).
         │  HTTP API + WebSocket · SQLite        │
         └───────────────────┬───────────────────┘
                             │ model adapter
-              local/scripted · OpenAI · Anthropic
+   local/scripted · OpenAI · Anthropic · Gemini · Stagehand · browser-use · browser-harness
                             │
                             ▼
                      runtime provider
-           local Playwright  ·  Docker container
+   local Chromium · Docker · Anchor · Browserbase · Steel · Kernel · E2B · Daytona
+                            │
+            1Password  ·  AgentMail  ·  Agentcard  (per environment)
 ```
 
 **Environment → session → run.** The environment is permanent. A session is the live browser and shell, started lazily, one per environment, so runs on the same environment queue up instead of colliding. A run moves through:
@@ -183,11 +189,13 @@ Every adapter sees the same five interfaces.
 
 | Interface | What it does |
 |---|---|
-| `computer` | open, screenshot, click, double-click, move, type, key, scroll, back, page info, text, extract |
+| `computer` | open, screenshot, click, double-click, move, type, key, scroll, back, page info, text, extract, fill |
 | `shell` | `bash -lc` inside the environment, with `/workspace` and `/workstate/skills` mapped to real folders |
 | `files` | read, write, and list, sandboxed to `/workspace` and `/workstate/skills` |
 | `human` | `request({ kind: "login" \| "approval" \| "input" \| "takeover", message })` |
 | `skills` | list and write the environment's saved procedures |
+
+When the environment has them, model-driven adapters also get `credentials_fill` (1Password), `mail_wait_for_code` (AgentMail), and `card_create` (Agentcard, gated on a human approval). See [`docs/integrations.md`](./docs/integrations.md).
 
 Paths outside the environment are rejected with a `400`, so a confused agent can't wander into the host filesystem through the files API.
 
@@ -204,42 +212,69 @@ Paths outside the environment are rejected with a `400`, so a confused agent can
 | Saved skills, replayed by the scripted adapter | Working |
 | Keyless `local/scripted` adapter (demo shop invoice, Hacker News front page, any URL you name) | Working |
 | TypeScript SDK, `asTool()` for parent agents | Working |
-| `workstate` CLI: `start`, `run`, `env`, `live`, `skills`, `setup` | Working |
+| `workstate` CLI: `start`, `run`, `env`, `integrations`, `live`, `skills`, `setup` | Working |
 | Bundled demo shop with a real login wall | Working |
-| OpenAI adapter (`computer_use_preview`, Responses API) | Included, not yet run against the live API |
-| Anthropic adapter (`computer-use-2025-01-24`) | Included, not yet run against the live API |
-| Docker runtime (`WORKSTATE_RUNTIME=docker`) | Included, not yet run against a Docker daemon |
+| Per-environment runtime and service selection (CLI, API, console) | Working |
+| Model adapters: OpenAI, Anthropic, Gemini computer use; Stagehand; browser-use; browser-harness | Included, not yet run with real keys |
+| Runtimes: Anchor Browser, Browserbase, Steel, Kernel, E2B, Daytona, Docker | Included, not yet run with real keys or a Docker daemon |
+| 1Password credentials, AgentMail inbox, Agentcard cards | Included, not yet run with real keys |
 
-The working rows are covered by unit tests and a browser pass of the full invoice loop. The other rows are complete code paths that haven't been exercised yet. Reports from people who run them are very welcome.
+The working rows are covered by unit tests and a browser pass of the full invoice loop. The "included" rows are complete, typed code paths against each provider's documented API. Without a key the run fails with an error that names the variables to set, never with a fake success. We have not executed them against the live services yet, and we say so in `workstate integrations` and on the console's Integrations page. Reports from people who run them are very welcome.
 
 ---
 
-## Models
+## Integrations
 
-| Model id | Runs when |
+Everything below is in the tree and selectable per environment. Keys live in the Workstate server's environment variables. `workstate integrations` prints this table with a live `configured` column.
+
+```bash
+workstate env create billing --runtime anchor --credentials op://Ops/Northwind --mailbox new --payments agentcard
+workstate env set billing --model gemini/gemini-3.8-flash
+workstate run --env billing "Download the latest invoice"
+```
+
+### Models and harnesses
+
+| Model id | Needs |
 |---|---|
-| `local/scripted` | Always. No key. |
-| `openai/computer-use-preview` | `OPENAI_API_KEY` is set |
-| `anthropic/claude-sonnet-4-5` | `ANTHROPIC_API_KEY` is set |
+| `local/scripted` | nothing |
+| `openai/computer-use-preview` | `OPENAI_API_KEY` |
+| `anthropic/claude-sonnet-4-5` | `ANTHROPIC_API_KEY` |
+| `gemini/gemini-3.8-flash` | `GEMINI_API_KEY` |
+| `stagehand/<provider>/<model>` | that provider's key, `@browserbasehq/stagehand` installed, a runtime with a CDP endpoint |
+| `browser-use/cloud` | `BROWSER_USE_API_KEY` |
+| `browser-harness/<provider>/<model>` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`, `browser-harness` installed, a runtime with a CDP endpoint |
 
-`WORKSTATE_DEFAULT_MODEL` picks the default. Otherwise an Anthropic key wins, then OpenAI, then the scripted adapter. Copy `.env.example` to see every setting.
+`WORKSTATE_DEFAULT_MODEL` picks the default. Otherwise an Anthropic key wins, then OpenAI, then Gemini, then the scripted adapter. An environment can pin its own default with `config.model`.
 
 The scripted adapter is honest about its limits. It knows three jobs and says so when you ask for a fourth, pointing you at a model key.
 
----
+### Runtimes
 
-## Runtimes
-
-**Local (default).** Playwright Chromium in the server process, one persistent profile per environment. Set `WORKSTATE_HEADLESS=0` to watch the real window.
-
-**Docker.** Set `WORKSTATE_RUNTIME=docker` and each session runs in a `workstate/runtime:0.1` container that exposes the same computer, shell, and files API.
+| `config.runtime` | What runs where | Needs |
+|---|---|---|
+| `local` (default) | Playwright Chromium in the server process, one persistent profile per environment. `WORKSTATE_HEADLESS=0` shows the window. | nothing |
+| `docker` | Browser, shell, and files inside a `workstate/runtime:0.1` container | a Docker daemon and the image |
+| `anchor` | Anchor Browser cloud Chromium over CDP, shell and files on the host | `ANCHOR_API_KEY` |
+| `browserbase` | Browserbase cloud Chromium over CDP | `BROWSERBASE_API_KEY`, `BROWSERBASE_PROJECT_ID` |
+| `steel` | Steel cloud (or self-hosted) Chromium over CDP | `STEEL_API_KEY` |
+| `kernel` | Kernel cloud Chromium over CDP | `KERNEL_API_KEY` |
+| `e2b` | Browser, shell, and files inside an E2B sandbox running the runtime image | `E2B_API_KEY`, `e2b` installed, a template built from the Dockerfile |
+| `daytona` | Browser, shell, and files inside a Daytona sandbox running the runtime image | `DAYTONA_API_KEY`, `@daytona/sdk` installed |
 
 ```bash
 docker build -f packages/runtime-docker/Dockerfile -t workstate/runtime:0.1 .
-WORKSTATE_RUNTIME=docker pnpm start
 ```
 
-A runtime provider is a small interface (`start(environment)` returning a session with a computer, shell, files, and `stop()`), so other backends can slot in.
+### Services
+
+| Config | Provider | Needs |
+|---|---|---|
+| `credentials = op://Vault/Item` | 1Password, service account SDK or Connect server | `OP_SERVICE_ACCOUNT_TOKEN`, or `OP_CONNECT_HOST` + `OP_CONNECT_TOKEN` |
+| `mailbox = <inbox>` or `new` | AgentMail | `AGENTMAIL_API_KEY` |
+| `payments = agentcard` | Agentcard | `AGENTCARD_CLIENT_ID`, `AGENTCARD_CLIENT_SECRET`, `AGENTCARD_CARDHOLDER_ID` |
+
+Every variable, default, and known gap is in [`docs/integrations.md`](./docs/integrations.md).
 
 ---
 
@@ -249,8 +284,10 @@ A runtime provider is a small interface (`start(environment)` returning a sessio
 workstate start --host 0.0.0.0 --port 4780 --no-open
 workstate run --env acme "Download the latest invoice from the demo shop"
 workstate run --env research-bot "Summarize the front page of Hacker News"
-workstate env create research-bot
+workstate env create research-bot --runtime browserbase --model openai/computer-use-preview
+workstate env set research-bot --credentials op://Ops/Research --no-payments
 workstate env list
+workstate integrations
 workstate live acme
 workstate skills list --env acme
 ```
@@ -264,21 +301,22 @@ From a clone, `workstate` is `node packages/cli/dist/bin.js`. `run`, `env`, and 
 **Shipped in this repo**
 
 - environments, sessions, and the run state machine
-- local Playwright runtime and a Docker runtime
+- local Playwright runtime, Docker, four hosted-browser runtimes, two sandbox runtimes
 - live view with human takeover and return
-- keyless scripted agent, OpenAI and Anthropic adapters
+- keyless scripted agent; OpenAI, Anthropic, Gemini, Stagehand, browser-use, and browser-harness adapters
+- 1Password credentials, AgentMail inbox, Agentcard cards with human approval
 - saved skills and replay
 - TypeScript SDK, `asTool()`, CLI, web console
 
 **Next**
 
-- run the OpenAI, Anthropic, and Docker paths end to end and fix what breaks
+- run every "included, not yet run" integration against real keys and fix what breaks
+- expose a CDP endpoint from the Docker, E2B, and Daytona sessions so Stagehand and browser-harness can attach to them
 - skill replay for model-driven runs, not only the scripted adapter
 - record successful trajectories and turn them into skills automatically
 - an MCP server over the same environment
 - a Python SDK
 - full desktop sessions, beyond the browser
-- more runtime providers
 - authentication for the control plane, so it can leave localhost
 
 ---
@@ -310,15 +348,16 @@ Workspace packages import each other from `dist/`, so run `pnpm build:libs` afte
 packages/sdk              client, Environment, asTool()
 packages/server           Hono API, SQLite, runs, live WebSocket, demo shop
 packages/runtime-local    Playwright computer, sandboxed files, shell
-packages/runtime-docker   container daemon and remote session
-packages/model-adapters   scripted, OpenAI, Anthropic, custom
+packages/runtime-docker   container daemon and remote session (also used by E2B and Daytona)
+packages/integrations     hosted browsers, sandboxes, 1Password, AgentMail, Agentcard, registry
+packages/model-adapters   scripted, OpenAI, Anthropic, Gemini, Stagehand, browser-use, browser-harness, custom
 packages/cli              the workstate command
 packages/web-ui           React console
 examples                  OpenAI, Anthropic, parent-agent tool
-docs                      concepts, architecture, human handoff, skills
+docs                      concepts, architecture, human handoff, skills, integrations
 ```
 
-Start with [`docs/concepts.md`](./docs/concepts.md), then [`docs/architecture.md`](./docs/architecture.md), [`docs/hitl.md`](./docs/hitl.md), and [`docs/skills.md`](./docs/skills.md).
+Start with [`docs/concepts.md`](./docs/concepts.md), then [`docs/architecture.md`](./docs/architecture.md), [`docs/hitl.md`](./docs/hitl.md), [`docs/skills.md`](./docs/skills.md), and [`docs/integrations.md`](./docs/integrations.md).
 
 > Workstate has no authentication yet. Keep it on localhost or a private network.
 
@@ -328,9 +367,9 @@ Start with [`docs/concepts.md`](./docs/concepts.md), then [`docs/architecture.md
 
 Workstate is early, and the most useful contributions are the ones that make the loop real in more places:
 
-- running the OpenAI and Anthropic adapters and reporting what happens
+- running any of the included model adapters, hosted browsers, or sandboxes with a real key and reporting what happens
 - trying the Docker runtime
-- new model adapters and runtime providers
+- new model adapters, runtime providers, and services
 - better skill formats and replay
 - example agents that do a real job
 
