@@ -55,6 +55,10 @@ On this machine, 2026-10-06:
 - Environment name pattern accepts `desk-acme` and rejects `bad name` with no console error.
 - OpenAI, Anthropic, and the Docker runtime were not executed (no keys, no Docker).
 
+## README
+
+Written as the public pitch ("a computer that remembers"). Keep it to what the code does. The "What's in the box" table marks OpenAI, Anthropic, and Docker as included but not yet run; update it when they are verified. Screenshots in `docs/assets/` are real captures from the invoice QA pass. There is no Python SDK, MCP server, or control-plane auth yet; they sit under Roadmap → Next.
+
 ## Next
 
 - Run the OpenAI and Anthropic adapters against real keys.
