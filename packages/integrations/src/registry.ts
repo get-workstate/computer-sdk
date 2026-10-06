@@ -70,7 +70,7 @@ export function describeRuntimes(): IntegrationDescriptor[] {
       configured: true,
       select: 'config.runtime = "docker"',
       docsUrl: "https://docs.docker.com/get-started/",
-      status: "verified",
+      status: "untested",
     },
     {
       id: "anchor",

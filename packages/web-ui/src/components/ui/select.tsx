@@ -23,6 +23,7 @@ export function Select({
 }) {
   return (
     <SelectPrimitive.Root
+      items={options.map((option) => ({ value: option.value, label: option.label }))}
       value={value}
       onValueChange={(next) => {
         if (typeof next === "string") onValueChange(next);
