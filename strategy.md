@@ -76,7 +76,7 @@ On this machine, 2026-10-06:
 
 ## README
 
-Written as the public pitch ("a computer that remembers"). Keep it to what the code does. The "What's in the box" table marks every integration as included but not yet run; update rows when they are verified. Screenshots in `docs/assets/` are real captures from the invoice QA pass. There is no Python SDK, MCP server, or control-plane auth yet; they sit under Roadmap → Next.
+Rewritten to the uploaded viral layout (centered Fraunces wordmark, shields, hero gif linking to mp4, comparison table, now/next roadmap) while staying inside what the code does. Assets in `assets/`: `workstate-wordmark.svg` (Fraunces opsz 72 / wght 560, outlined), `hero-demo.gif` + `workstate-demo.mp4` (real 7s Playwright capture of the invoice handoff on `readme-hero`, no API key), `live-handoff.png`, `environment-skill.png`, `integrations.png` (cropped above the cut-off E2B row). No Python SDK, no MCP, no `pip install`, no Grok, no Cloudflare/Fly, no desktop session, no Anchor-as-hosted-Workstate. License stays MIT. `CONTRIBUTING.md` exists because the README links it. `docs/assets/` still has the earlier stills; the README no longer points at them.
 
 ## Next
 
