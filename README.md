@@ -1,26 +1,57 @@
-[READMEs should be written by humans, to humans.](https://x.com/rauchg/status/2106848085267902815)  
-![MIT license](https://img.shields.io/badge/license-MIT-b8431f)![Requires Node.js 22.13 or newer](https://img.shields.io/badge/node-%E2%89%A522.13-1c1714)![TypeScript 5.9](https://img.shields.io/badge/typescript-5.9-3178c6)![The default agent runs with no API key](https://img.shields.io/badge/API%20key-not%20required-1f7a4d)
+<p align="center">
+  <a href="https://x.com/rauchg/status/2106848085267902815">READMEs should be written by humans, to humans.</a>
+</p>
 
-[Docs](./docs) · [Integrations](./docs/integrations.md) · [Examples](./examples) · [Contributing](./CONTRIBUTING.md)
+<p align="center">
+  <img src="https://img.shields.io/badge/license-MIT-b8431f" alt="MIT license" />
+  <img src="https://img.shields.io/badge/node-%E2%89%A522.13-1c1714" alt="Requires Node.js 22.13 or newer" />
+  <img src="https://img.shields.io/badge/typescript-5.9-3178c6" alt="TypeScript 5.9" />
+  <img src="https://img.shields.io/badge/API%20key-not%20required-1f7a4d" alt="The default agent runs with no API key" />
+</p>
 
-![Workstate](assets/workstate-wordmark.svg)
+<p align="center">
+  <a href="./docs">Docs</a> ·
+  <a href="./docs/integrations.md">Integrations</a> ·
+  <a href="./examples">Examples</a> ·
+  <a href="./CONTRIBUTING.md">Contributing</a>
+</p>
 
-# Workstate
+<h1 align="center">Workstate</h1>
 
-Computer environments, batteries included
+<p align="center">Computer environments, batteries included</p>
 
-**tl;dr:** Workstate is an open orchestrator for virtual computer environments, optimized for digital coworker experiences. Workstate is not a sandbox - It integrates to your sandbox environment of choice, and adds on top the actual tools to make it a full pledged computer environment.
+<p align="center">
+  <strong>tl;dr:</strong> Workstate is an open orchestrator for virtual computer environments, optimized for digital coworker experiences. Workstate is not a sandbox - It integrates to your sandbox environment of choice, and adds on top the actual tools to make it a full pledged computer environment.
+</p>
 
-![Sandbox + Workstate. Workstate is the layer that turns raw sandbox infrastructure into a complete computer environment for digital coworkers. Sandboxes give you the basic primitives, such as compute, files, shell access, and limited browser or desktop control, but teams still have to build the higher-level system around them. Workstate sits on top and adds the pieces that make those computers actually usable by long-lived agents: orchestration, environment and session lifecycle, credential onboarding, human demonstration, sub-agents, and reusable memory and skills. In other words, the sandbox is the machine, while Workstate is the coworker-ready operating layer around it.](assets/sandbox-vs-workstate.png)
+<p align="center">
+  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox + Workstate. Sandboxes supply compute and files. Workstate adds browser and desktop control, orchestration, environment lifecycle, auth onboarding, human demonstration, sub-agents, and reusable skills." width="100%" />
+</p>
 
+<div align="center">
 
-|                                                                                                                                          |                                                                                                                                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ![A browser sign-in page, with a password typed in and the orders screen opening after](assets/cap-auth.gif) **Auth handoff** | ![A browser scrolling the Hacker News front page](assets/cap-bot.gif) **Bot-detection bypass** |
-| ![A person signs in on a browser page and opens an invoice](assets/cap-learn.gif) **Takeover capture**                  | ![The browser jumps from a web page straight to a saved invoice](assets/cap-fast.gif) **Skill replay** |
+<table width="640">
+  <tr>
+    <td align="center" width="50%" valign="bottom">
+      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="300" /></a><br /><b>Auth handoff</b>
+    </td>
+    <td align="center" width="50%" valign="bottom">
+      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="300" /></a><br /><b>Bot-detection bypass</b>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" width="50%" valign="bottom">
+      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="300" /></a><br /><b>Takeover capture</b>
+    </td>
+    <td align="center" width="50%" valign="bottom">
+      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="300" /></a><br /><b>Skill replay</b>
+    </td>
+  </tr>
+</table>
 
+</div>
 
-Copy this prompt to your coding agent to get started.
+<p align="center">Copy this prompt to your coding agent to get started.</p>
 
 ```text
 Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }) and environment(name). Then connect that environment to the agent loop, either through the MCP server or through env.asTool() (openai, anthropic, or execute). That is the whole integration.
@@ -75,8 +106,6 @@ first run   → agent works it out, a person helps with the login
 next run    → skill matches, saved login still valid, no person needed
 ```
 
-![The readme-hero environment after the invoice run: skill download-latest-invoice, an invoices folder, and a succeeded run](assets/environment-skill.png)
-
 ---
 
 
@@ -109,56 +138,9 @@ await computer.execute({ prompt: "Download the latest invoice from the demo shop
 
 
 
-## One interface above the computer infrastructure
-
-```text
-                     your product
-                          │
-                      your agent
-                          │
-                          ▼
-              ┌─────────────────────┐
-              │      WORKSTATE      │
-              │                     │
-              │    Control plane    │
-              │  environments       │
-              │  sessions           │
-              │  runs               │
-              │  human handoff      │
-              │  skills             │
-              │                     │
-              │   Computer API      │
-              │   TypeScript SDK    │
-              └──────────┬──────────┘
-                         │
-       ┌─────────────────┼──────────────────┐
-       ▼                 ▼                  ▼
-     Local            Daytona             Anchor
-       │                 │                  │
-       └── Docker · E2B · Browserbase · Steel · Kernel
-```
-
-**Control plane.** Environments, sessions, the run state machine, runtime routing, human intervention, skills, files, and the live view. HTTP, a WebSocket, and SQLite, on one port.
-
-**Computer interface.** What a specific agent sees during a run: screenshots, mouse, keyboard, browser, shell, files, and `human.request()`.
-
-There is no MCP server and no Python SDK yet. Both are on the roadmap. Today the surfaces are the TypeScript SDK, the `workstate` CLI, and the web console.
-
----
-
-
-
-## Built for agents that have a job
-
-Workstate is for long-lived agents that operate real software on someone's behalf, more than once.
-
-**Assistants · finance · sales · recruiting · support · IT · research**
-
-Those products already have their own model, memory, and product UI. Workstate does not replace them. It is the **computer layer**: a browser profile, a workspace, and a person in the loop.
-
-If you only need a throwaway shell, use a sandbox.
-
-If the agent needs to come back tomorrow and still be logged in, Workstate is the piece that holds that.
+<p align="center">
+  <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session (browser, desktop, filesystem, session state)." width="100%" />
+</p>
 
 ---
 
@@ -332,7 +314,7 @@ on failure, the agent repairs it
 
 
 
-## Workstate is not another sandbox
+## Workstate compounds with your any sandbox runtime
 
 Workstate runs **with** sandbox and browser providers. You pick the runtime per environment. The control plane stays the same.
 
@@ -364,54 +346,11 @@ A runtime solves where the browser runs. Workstate solves the lifecycle around i
 
 
 
-## Models, harnesses, runtimes
+## Native integrations ecosystem
 
-Everything below is in the tree. `workstate integrations` prints the live table, including which variables are set on this server. Without a key, a run that needs one **fails** and names the variable. Nothing is stubbed to look successful.
-
-![Integrations page: Local Chromium verified, Docker untested, Anchor Browser and Browserbase and Steel and Kernel marked needs key](assets/integrations.png)
-
-### Models and harnesses
-
-
-| Model id                             | Needs                                                                                   |
-| ------------------------------------ | --------------------------------------------------------------------------------------- |
-| `local/scripted`                     | nothing. Demo-shop invoice, Hacker News, or an explicit URL.                            |
-| `openai/computer-use-preview`        | `OPENAI_API_KEY`                                                                        |
-| `anthropic/claude-sonnet-4-5`        | `ANTHROPIC_API_KEY`                                                                     |
-| `gemini/gemini-3.8-flash`            | `GEMINI_API_KEY`                                                                        |
-| `stagehand/<provider>/<model>`       | that provider's key, `@browserbasehq/stagehand` installed, and a runtime with a CDP URL |
-| `browser-use/cloud`                  | `BROWSER_USE_API_KEY`                                                                   |
-| `browser-harness/<provider>/<model>` | `OPENAI_API_KEY` or `ANTHROPIC_API_KEY`, the `browser-harness` CLI, and a CDP URL       |
-
-
-Only `local/scripted` has been executed in this repo. The others are real clients against each provider's API. OpenAI and Anthropic safety checks, and Gemini `safety_decision`, are routed to a human approval.
-
-### Runtimes
-
-**Local · Docker · Anchor · Browserbase · Steel · Kernel · E2B · Daytona**
-
-`local` is in-process Playwright, one Chromium profile per environment. Anchor, Browserbase, Steel, and Kernel are hosted Chromium over CDP; the shell and files stay on the Workstate machine. Docker, E2B, and Daytona run the Workstate runtime image, so the browser, shell, and files all live in the sandbox. Docker, E2B, and Daytona do not expose a CDP URL yet, so Stagehand and browser-harness cannot attach to them.
-
-### Services
-
-
-| On the environment               | What the agent gets                                                                          |
-| -------------------------------- | -------------------------------------------------------------------------------------------- |
-| `credentials: "op://Vault/Item"` | 1Password. `credentials_fill` types the login. The secret never enters the model transcript. |
-| `mailbox: "<inbox>"` or `"new"`  | AgentMail. Address, inbox listing, and a wait-for-code tool.                                 |
-| `payments: "agentcard"`          | A single-use card, only after a person approves it in the live view.                         |
-
-
-```bash
-workstate env create billing \
-  --runtime anchor \
-  --model gemini/gemini-3.8-flash \
-  --credentials op://Ops/Northwind \
-  --mailbox new \
-  --payments agentcard
-```
-
-Same fields in the console under **New environment** and **Edit setup**, or `env.configure({...})` in the SDK. The full variable list, defaults, and known gaps are in `[docs/integrations.md](./docs/integrations.md)`.
+<p align="center">
+  <img src="assets/native-integrations.png" alt="Workstate integration surface. Credential and identity providers, models and computer-use APIs, computer runtimes and sandbox providers, and agent loops, SDKs, and frameworks where Workstate appears as a tool." width="100%" />
+</p>
 
 ---
 
@@ -473,56 +412,6 @@ Workstate
 Hosted browsers and sandboxes are adapters. Anchor is one of them: cloud Chromium over CDP, optional named profile, selected with `config.runtime = "anchor"`. It is not a hosted Workstate, and this repo does not add a proprietary control plane on top of it. The same environment can move to `local`, `e2b`, or `daytona` without moving its files or skills.
 
 Set the provider's key on the Workstate server. Until you do, the adapter stays in the tree and the run fails with a setup error.
-
----
-
-
-
-## Roadmap
-
-**In this repo**
-
-- environments, sessions, and the run state machine
-- local Playwright, plus Docker, E2B, and Daytona adapters
-- Anchor, Browserbase, Steel, and Kernel over CDP
-- live view, takeover, and return, on desktop and mobile
-- keyless scripted agent
-- OpenAI, Anthropic, and Gemini computer-use adapters
-- Stagehand, browser-use, and browser-harness adapters
-- 1Password, AgentMail, and Agentcard
-- skills the scripted adapter replays
-- TypeScript SDK, `asTool()`, CLI, web console
-
-**Not built yet**
-
-- running each hosted adapter against a real key and fixing what breaks
-- a CDP URL from Docker, E2B, and Daytona, so Stagehand and browser-harness can attach
-- recorded trajectories, manual demonstrations, and skill repair
-- skill replay for model-driven runs, not only the scripted adapter
-- an MCP server and a Python SDK
-- Windows and macOS sessions, beyond the browser
-- authentication on the control plane, so it can leave localhost
-
----
-
-
-
-## The five-minute test
-
-Someone who has never built a computer-use agent should be able to clone this repo and, within five minutes:
-
-```bash
-pnpm install && pnpm exec playwright install chromium && pnpm build && pnpm start
-```
-
-then click **Download latest invoice** and:
-
-- watch an agent drive a real browser
-- take over when it hits the sign-in wall
-- hand the computer back
-- run it again and watch it finish alone
-
-If that still means stitching five products together before anything moves, Workstate has not done its job. Please open an issue.
 
 ---
 
