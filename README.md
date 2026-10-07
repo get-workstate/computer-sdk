@@ -9,8 +9,31 @@
 <h1 align="center">Give your agents computers they can actually work from.</h1>
 
 <p align="center">
-  The open-source computer harness for people building agents that come back tomorrow.
+  computer environments, batteries included
 </p>
+
+<table>
+  <tr>
+    <td width="50%" align="center" valign="bottom">
+      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="Handling auth from user" width="100%" /></a>
+      <br /><b>Handling auth from user</b>
+    </td>
+    <td width="50%" align="center" valign="bottom">
+      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="Overcoming bot detection" width="100%" /></a>
+      <br /><b>Overcoming bot detection</b>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" align="center" valign="bottom">
+      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="Learning from human demonstration" width="100%" /></a>
+      <br /><b>Learning from human demonstration</b>
+    </td>
+    <td width="50%" align="center" valign="bottom">
+      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="Hyper fast task completion with trajectory memorization" width="100%" /></a>
+      <br /><b>Hyper fast task completion with trajectory memorization</b>
+    </td>
+  </tr>
+</table>
 
 <p align="center">
   <a href="https://img.shields.io/badge/license-MIT-b8431f"><img src="https://img.shields.io/badge/license-MIT-b8431f" alt="MIT license" /></a>
@@ -94,12 +117,43 @@ next run    → skill matches, saved login still valid, no person needed
 
 ---
 
-## Quickstart
+## Getting started
+
+Copy this prompt to your coding agent to get started.
+
+```text
+Clone https://github.com/get-workstate/computer-sdk and get the bundled demo running on this machine.
+
+Needs Node.js 22.13 or newer and pnpm 10. Workstate is not on npm. Run it from the clone.
+
+git clone https://github.com/get-workstate/computer-sdk.git workstate
+cd workstate
+pnpm install
+pnpm exec playwright install chromium
+pnpm build
+pnpm start
+
+That serves the API, the web console, and the demo shop on http://127.0.0.1:4780.
+
+Open the console, use the environment named acme (create it if it is missing), leave the model on local/scripted, and run:
+
+Download the latest invoice from the demo shop
+
+The run stops on the Northwind Supply sign-in page and asks for a person. Sign in as demo@workstate.dev with password workstate, then return control to the agent. Do not invent another login.
+
+Confirm the run saved /workspace/invoices/INV-1042.txt in that environment and wrote a skill named download-latest-invoice. Run the same task again on the same environment. The scripted adapter replays the skill and finishes with no person.
+
+The same run from the terminal, after pnpm start, is:
+
+node packages/cli/dist/bin.js run --env acme "Download the latest invoice from the demo shop"
+
+Do not add authentication, a database, or extra services. Leave the runtime on local and the model on local/scripted unless I ask for something else.
+```
 
 You need Node.js 22.13+ and pnpm 10. Workstate is not published to a package registry yet; you run it from a clone.
 
 ```bash
-git clone <this repo> workstate && cd workstate
+git clone https://github.com/get-workstate/computer-sdk.git workstate && cd workstate
 pnpm install
 pnpm exec playwright install chromium
 pnpm build
