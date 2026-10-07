@@ -333,6 +333,12 @@ on failure, the agent repairs it
 
 Workstate runs **with** sandbox and browser providers. You pick the runtime per environment. The control plane stays the same.
 
+<p align="center">
+  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox solutions versus Workstate: sandboxes provide compute and files, Workstate also covers browser control, orchestration, environment lifecycle, credential onboarding, human demonstration, sub-agents, and reusable skills" width="100%" />
+</p>
+
+The marks above are the product comparison. The rows underneath are what this repository actually implements today.
+
 | | Sandbox | Computer-use model | Workstate |
 |---|:---:|:---:|:---:|
 | Isolated compute | ✓ |  | with Docker, E2B, or Daytona |
