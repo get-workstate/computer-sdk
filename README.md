@@ -18,33 +18,33 @@
 
 <h1 align="center">Workstate</h1>
 
-<p align="center">Computer environments, batteries included</p>
+<p align="center">The computer SDK for developers building digital coworkers</p>
 
 <p align="center">
   <strong>tl;dr:</strong> Workstate is an open orchestrator for virtual computer environments, optimized for digital coworker experiences. Workstate is not a sandbox - It integrates to your sandbox environment of choice, and adds on top the actual tools to make it a full pledged computer environment.
 </p>
 
 <p align="center">
-  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox + Workstate. Sandboxes supply compute and files. Workstate adds browser and desktop control, orchestration, environment lifecycle, auth onboarding, human demonstration, sub-agents, and reusable skills." width="100%" />
+  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox + Workstate. Sandboxes supply compute and files. Workstate adds browser and desktop control, orchestration, environment lifecycle, auth onboarding, human demonstration, sub-agents, and reusable skills." width="760" />
 </p>
 
 <div align="center">
 
-<table width="640">
+<table width="520">
   <tr>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="300" /></a><br /><b>Auth handoff</b>
+      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="240" /></a><br /><b>Auth handoff</b>
     </td>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="300" /></a><br /><b>Bot-detection bypass</b>
+      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="240" /></a><br /><b>Bot-detection bypass</b>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="300" /></a><br /><b>Takeover capture</b>
+      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="240" /></a><br /><b>Takeover capture</b>
     </td>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="300" /></a><br /><b>Skill replay</b>
+      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="240" /></a><br /><b>Skill replay</b>
     </td>
   </tr>
 </table>
@@ -112,13 +112,13 @@ await computer.execute({ prompt: "Download the latest invoice from the demo shop
 
 
 <p align="center">
-  <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session (browser, desktop, filesystem, session state)." width="100%" />
+  <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session (browser, desktop, filesystem, session state)." width="760" />
 </p>
 
 ## Native integrations ecosystem
 
 <p align="center">
-  <img src="assets/native-integrations.png" alt="Workstate native integrations. Models and computer use: OpenAI, Anthropic, Gemini, Grok, DeepSeek, Qwen. Sandbox runtimes: Cloudflare, E2B, Daytona, Fly.io, Modal. Browser runtimes: Anchor Browser. Credential and identity providers: 1Password, Bitwarden, LastPass. Agent loops and SDKs: LangChain, LangGraph, CrewAI, OpenAI Agents SDK, Anthropic Agent SDK, Vercel AI SDK, Agno." width="100%" />
+  <img src="assets/native-integrations.png" alt="Workstate native integrations. Models and computer use: OpenAI, Anthropic, Gemini, Grok, DeepSeek, Qwen. Sandbox runtimes: Cloudflare, E2B, Daytona, Fly.io, Modal. Browser runtimes: Anchor Browser. Credential and identity providers: 1Password, Bitwarden, LastPass. Agent loops and SDKs: LangChain, LangGraph, CrewAI, OpenAI Agents SDK, Anthropic Agent SDK, Vercel AI SDK, Agno." width="760" />
 </p>
 
 ---
