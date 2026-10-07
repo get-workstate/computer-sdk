@@ -12,28 +12,42 @@
   computer environments, batteries included
 </p>
 
+<p align="center">
+  <strong>tl;dr</strong> Workstate is an open control plane you run yourself. An agent gets a computer it comes back to: a browser that keeps its cookies, files, a person when it needs one, and a skill the next run can replay.
+</p>
+
+<p align="center">
+  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox + Workstate. Sandboxes supply compute and files. Workstate adds full browser and desktop control, orchestration, environment and session lifecycle, auth credential onboarding, human demonstration, sub-agents, and memory plus reusable skills." width="100%" />
+</p>
+
 <table>
   <tr>
     <td width="50%" align="center" valign="bottom">
-      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="Handling auth from user" width="100%" /></a>
+      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="100%" /></a>
       <br /><b>Handling auth from user</b>
     </td>
     <td width="50%" align="center" valign="bottom">
-      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="Overcoming bot detection" width="100%" /></a>
+      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="100%" /></a>
       <br /><b>Overcoming bot detection</b>
     </td>
   </tr>
   <tr>
     <td width="50%" align="center" valign="bottom">
-      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="Learning from human demonstration" width="100%" /></a>
+      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="100%" /></a>
       <br /><b>Learning from human demonstration</b>
     </td>
     <td width="50%" align="center" valign="bottom">
-      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="Hyper fast task completion with trajectory memorization" width="100%" /></a>
+      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="100%" /></a>
       <br /><b>Hyper fast task completion with trajectory memorization</b>
     </td>
   </tr>
 </table>
+
+Copy this prompt to your coding agent to get started.
+
+```text
+Clone https://github.com/get-workstate/computer-sdk and, with Node.js 22.13+ and pnpm 10, run pnpm install && pnpm exec playwright install chromium && pnpm build && pnpm start, then open http://127.0.0.1:4780 and run "Download the latest invoice from the demo shop" on environment acme with model local/scripted; when it stops, sign in as demo@workstate.dev / workstate and return control, confirm /workspace/invoices/INV-1042.txt and skill download-latest-invoice, run the same task again with no person, and do not add auth, a database, or extra services.
+```
 
 <p align="center">
   <a href="https://img.shields.io/badge/license-MIT-b8431f"><img src="https://img.shields.io/badge/license-MIT-b8431f" alt="MIT license" /></a>
@@ -62,7 +76,7 @@ Building an agent that uses a computer means solving the same infrastructure ove
 > A sandbox gives your agent somewhere to run.
 > **Workstate gives it a computer it comes back to.**
 
-The loop in the video ships in this repo and runs **without an API key**. A bundled demo shop and a keyless scripted agent let you watch it end to end.
+The invoice handoff above ships in this repo and runs **without an API key**. A bundled demo shop and a keyless scripted agent let you watch it end to end.
 
 ---
 
@@ -117,38 +131,7 @@ next run    → skill matches, saved login still valid, no person needed
 
 ---
 
-## Getting started
-
-Copy this prompt to your coding agent to get started.
-
-```text
-Clone https://github.com/get-workstate/computer-sdk and get the bundled demo running on this machine.
-
-Needs Node.js 22.13 or newer and pnpm 10. Workstate is not on npm. Run it from the clone.
-
-git clone https://github.com/get-workstate/computer-sdk.git workstate
-cd workstate
-pnpm install
-pnpm exec playwright install chromium
-pnpm build
-pnpm start
-
-That serves the API, the web console, and the demo shop on http://127.0.0.1:4780.
-
-Open the console, use the environment named acme (create it if it is missing), leave the model on local/scripted, and run:
-
-Download the latest invoice from the demo shop
-
-The run stops on the Northwind Supply sign-in page and asks for a person. Sign in as demo@workstate.dev with password workstate, then return control to the agent. Do not invent another login.
-
-Confirm the run saved /workspace/invoices/INV-1042.txt in that environment and wrote a skill named download-latest-invoice. Run the same task again on the same environment. The scripted adapter replays the skill and finishes with no person.
-
-The same run from the terminal, after pnpm start, is:
-
-node packages/cli/dist/bin.js run --env acme "Download the latest invoice from the demo shop"
-
-Do not add authentication, a database, or extra services. Leave the runtime on local and the model on local/scripted unless I ask for something else.
-```
+## Quickstart
 
 You need Node.js 22.13+ and pnpm 10. Workstate is not published to a package registry yet; you run it from a clone.
 
@@ -391,11 +374,7 @@ on failure, the agent repairs it
 
 Workstate runs **with** sandbox and browser providers. You pick the runtime per environment. The control plane stays the same.
 
-<p align="center">
-  <img src="assets/sandbox-vs-workstate.png" alt="Sandbox solutions versus Workstate: sandboxes provide compute and files, Workstate also covers browser control, orchestration, environment lifecycle, credential onboarding, human demonstration, sub-agents, and reusable skills" width="100%" />
-</p>
-
-The marks above are the product comparison. The rows underneath are what this repository actually implements today.
+The graphic at the top is the product comparison. The rows underneath are what this repository actually implements today.
 
 | | Sandbox | Computer-use model | Workstate |
 |---|:---:|:---:|:---:|
