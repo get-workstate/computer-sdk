@@ -61,50 +61,23 @@ Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }
 
 ## Why Workstate
 
+Batteries included:
 
-
-### Run the computer agent for you
-
-Use a scripted agent, a computer-use model, or a harness. Workstate handles the environment, the session, the run, and the handoff.
-
-```ts
-import { Workstate } from "@workstate/sdk";
-
-const ws = new Workstate(); // http://127.0.0.1:4780
-const env = await ws.environment("finance-coworker");
-
-const result = await env.run(
-  {
-    prompt: "Download the latest invoice from the demo shop",
-    model: "anthropic/claude-sonnet-4-5",
-  },
-  { onStatus: (status) => console.log(status) },
-);
-```
-
-Leave `model` off and the run uses `local/scripted`, which needs no key.
-
-### Bring in a human when needed
-
-Sign-in, MFA, an approval, or anything the agent should not finish alone. Inside a run the agent calls one primitive:
-
-```ts
-await human.request({
-  kind: "login",
-  message: "Please finish signing in",
-});
-```
-
-The run moves to `waiting_for_human`. A person opens the live view, uses the real page, and clicks **Return to agent**. The same run continues.
-
-### Remember what worked
-
-Successful computer work can be saved as a skill inside the environment. The scripted adapter replays a matching skill on the next run instead of starting over.
-
-```text
-first run   → agent works it out, a person helps with the login
-next run    → skill matches, saved login still valid, no person needed
-```
+- ✅ Handle MFA + SSO
+- ✅ Handle geo-restricted websites
+- ✅ Handle enterprise VPN connection
+- ✅ Securely host and use credentials
+- ✅ Ask for a human in the loop
+- ✅ Fast, WebRTC-based live view
+- ✅ Mobile support for the live view
+- ✅ Manual demonstration and replay by the agent
+- ✅ Action caching
+- ✅ Automatic captcha solving and dedicated fingerprinting
+- ✅ Automatic token optimization
+- ✅ Persistent browser profile, files, and skills
+- ✅ Shell and files on the same computer
+- ✅ Sub-agent tool for the parent loop
+- ✅ Swap the sandbox runtime without moving the environment
 
 ---
 
@@ -140,6 +113,12 @@ await computer.execute({ prompt: "Download the latest invoice from the demo shop
 
 <p align="center">
   <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session (browser, desktop, filesystem, session state)." width="100%" />
+</p>
+
+## Native integrations ecosystem
+
+<p align="center">
+  <img src="assets/native-integrations.png" alt="Workstate native integrations. Models and computer use: OpenAI, Anthropic, Gemini, Grok, DeepSeek, Qwen. Sandbox runtimes: Cloudflare, E2B, Daytona, Fly.io, Modal. Browser runtimes: Anchor Browser. Credential and identity providers: 1Password, Bitwarden, LastPass. Agent loops and SDKs: LangChain, LangGraph, CrewAI, OpenAI Agents SDK, Anthropic Agent SDK, Vercel AI SDK, Agno." width="100%" />
 </p>
 
 ---
@@ -268,8 +247,6 @@ same run continues
 
 `kind` is `login`, `approval`, `input`, or `takeover`. The live view is JPEG frames over a WebSocket, every 400ms, with clicks and typing forwarded. It works in a desktop browser and on a phone. It is not VNC.
 
-![Live view paused on the Northwind Supply sign-in page, with Needs you and Return to agent](assets/live-handoff.png)
-
 Agentcard payments use this on purpose: `card_create` asks for approval before any card exists. A decline comes back to the model as `{ approved: false }`. The run continues.
 
 ---
@@ -314,7 +291,7 @@ on failure, the agent repairs it
 
 
 
-## Workstate compounds with your any sandbox runtime
+## Workstate compounds with any sandbox runtime
 
 Workstate runs **with** sandbox and browser providers. You pick the runtime per environment. The control plane stays the same.
 
@@ -341,16 +318,6 @@ The graphic at the top is the product comparison. The rows underneath are what t
 
 
 A runtime solves where the browser runs. Workstate solves the lifecycle around it: whose computer it is, who is allowed to touch it, and what it remembers.
-
----
-
-
-
-## Native integrations ecosystem
-
-<p align="center">
-  <img src="assets/native-integrations.png" alt="Workstate integration surface. Credential and identity providers, models and computer-use APIs, computer runtimes and sandbox providers, and agent loops, SDKs, and frameworks where Workstate appears as a tool." width="100%" />
-</p>
 
 ---
 
