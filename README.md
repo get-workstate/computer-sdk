@@ -1,4 +1,8 @@
 <p align="center">
+  <a href="https://x.com/rauchg/status/2106848085267902815">READMEs should be written by humans, to humans.</a>
+</p>
+
+<p align="center">
   <img src="assets/workstate-wordmark.svg" alt="Workstate" width="220" />
 </p>
 
