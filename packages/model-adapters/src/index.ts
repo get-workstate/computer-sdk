@@ -1,4 +1,5 @@
 import type { CuaAdapter, IntegrationDescriptor } from "@workstate/sdk";
+import { anchorAdapter } from "./anchor.js";
 import { anthropicAdapter } from "./anthropic.js";
 import { browserHarnessAdapter } from "./browser-harness.js";
 import { browserUseAdapter } from "./browser-use.js";
@@ -9,6 +10,7 @@ import { stagehandAdapter } from "./stagehand.js";
 
 const builtIn: CuaAdapter[] = [
   scriptedAdapter,
+  anchorAdapter,
   openaiAdapter,
   anthropicAdapter,
   geminiAdapter,
@@ -31,6 +33,7 @@ export function listAdapters(): CuaAdapter[] {
 
 export function defaultModel(): string {
   if (process.env.WORKSTATE_DEFAULT_MODEL) return process.env.WORKSTATE_DEFAULT_MODEL;
+  if (process.env.ANCHOR_API_KEY) return "anchor/agent";
   if (process.env.ANTHROPIC_API_KEY) return "anthropic/claude-sonnet-4-5";
   if (process.env.OPENAI_API_KEY) return "openai/computer-use-preview";
   if (process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY) return "gemini/gemini-3.8-flash";
@@ -48,6 +51,7 @@ export function resolveAdapter(model?: string): CuaAdapter {
   const prefix = requested.split("/")[0] ?? requested;
   if (registry.has(prefix)) return registry.get(prefix)!;
   if (requested === "local" || requested.startsWith("local/")) return scriptedAdapter;
+  if (requested === "anchor" || requested.startsWith("anchor/")) return anchorAdapter;
   if (requested.startsWith("stagehand")) return stagehandAdapter;
   if (requested.startsWith("browser-use")) return browserUseAdapter;
   if (requested.startsWith("browser-harness")) return browserHarnessAdapter;
@@ -59,6 +63,7 @@ export function resolveAdapter(model?: string): CuaAdapter {
 
 const MODEL_META: Record<string, { envVars: string[]; example: string; docsUrl?: string; status: "verified" | "untested" }> = {
   local: { envVars: [], example: "local/scripted", status: "verified" },
+  anchor: { envVars: ["ANCHOR_API_KEY"], example: "anchor/agent", docsUrl: "https://docs.anchorbrowser.io", status: "verified" },
   openai: { envVars: ["OPENAI_API_KEY"], example: "openai/computer-use-preview", docsUrl: "https://platform.openai.com/docs/guides/tools-computer-use", status: "untested" },
   anthropic: { envVars: ["ANTHROPIC_API_KEY"], example: "anthropic/claude-sonnet-4-5", docsUrl: "https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/computer-use-tool", status: "untested" },
   gemini: { envVars: ["GEMINI_API_KEY"], example: "gemini/gemini-3.8-flash", docsUrl: "https://ai.google.dev/gemini-api/docs/computer-use", status: "untested" },
@@ -85,6 +90,7 @@ export function describeAdapters(): IntegrationDescriptor[] {
 }
 
 export { anthropicAdapter, anthropicModelId } from "./anthropic.js";
+export { anchorAdapter, matchAnchorTask } from "./anchor.js";
 export { browserHarnessAdapter, harnessModelSpec, runHarness } from "./browser-harness.js";
 export { browserUseAdapter, browserUseLlm } from "./browser-use.js";
 export { createCustomAdapter } from "./custom.js";

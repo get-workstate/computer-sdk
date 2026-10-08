@@ -98,6 +98,24 @@ export function openApiDocument(): Record<string, unknown> {
       "/api/environments/{ref}/exec": {
         post: { summary: "Run a shell command in the environment workspace.", responses: { "200": { description: "{ stdout, stderr, exitCode }" } } },
       },
+      "/api/environments/{ref}/anchor/demonstrations": {
+        post: {
+          summary: "Create an Anchor manual-demonstration link. Requires name and description.",
+          responses: { "201": { description: "Anchor demonstration with session_id and share_url" } },
+        },
+      },
+      "/api/environments/{ref}/anchor/demonstrations/{id}": {
+        get: {
+          summary: "Poll an Anchor demonstration. Completed demonstrations become reusable task memories.",
+          responses: { "200": { description: "{ demonstration, learnedTask }" } },
+        },
+      },
+      "/api/environments/{ref}/anchor/reauthenticate": {
+        post: {
+          summary: "Validate and refresh the environment's Anchor managed identity.",
+          responses: { "200": { description: "Anchor identity authentication status" } },
+        },
+      },
     },
   };
 }

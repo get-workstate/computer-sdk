@@ -44,6 +44,10 @@ export class LocalRuntimeProvider implements RuntimeProvider {
 export interface RemoteBrowser {
   cdpUrl: string;
   liveViewUrl?: string;
+  provider?: {
+    name: string;
+    sessionId?: string;
+  };
   stop(): Promise<void>;
 }
 
@@ -77,6 +81,7 @@ export class CdpBrowserRuntimeProvider implements RuntimeProvider {
       files: new LocalFiles(roots),
       cdpUrl: remote.cdpUrl,
       liveViewUrl: remote.liveViewUrl,
+      provider: remote.provider,
       stop: async () => {
         await computer.close();
         await remote.stop();

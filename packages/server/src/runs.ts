@@ -300,6 +300,7 @@ export class RunManager {
         }),
         serverUrl: this.options.publicUrl,
         cdpUrl: session.runtime.cdpUrl,
+        runtime: session.runtime.provider ?? { name: session.record.runtime },
         integrations,
         recipe: this.recipes.get(runId),
         log: (kind, message, data) => {

@@ -11,6 +11,7 @@ const STRING_KEYS = [
   "mailbox",
   "payments",
   "anchorProfile",
+  "anchorIdentityId",
   "browserbaseContextId",
   "kernelProfile",
   "e2bTemplate",
@@ -34,6 +35,30 @@ export function validateConfig(config: Record<string, unknown>): Record<string, 
   }
   if (config.payments !== undefined && config.payments !== "agentcard") {
     throw invalid('config.payments must be "agentcard".');
+  }
+  if (
+    config.anchorIdentitySkipValidation !== undefined &&
+    typeof config.anchorIdentitySkipValidation !== "boolean"
+  ) {
+    throw invalid("config.anchorIdentitySkipValidation must be a boolean.");
+  }
+  if (config.anchorTasks !== undefined) {
+    if (
+      !Array.isArray(config.anchorTasks) ||
+      config.anchorTasks.some(
+        (task) =>
+          !task ||
+          typeof task !== "object" ||
+          typeof (task as Record<string, unknown>).taskId !== "string" ||
+          typeof (task as Record<string, unknown>).name !== "string" ||
+          !Array.isArray((task as Record<string, unknown>).tags),
+      )
+    ) {
+      throw invalid("config.anchorTasks must be an array of learned Anchor task records.");
+    }
+  }
+  if (config.anchorDemonstrations !== undefined && !Array.isArray(config.anchorDemonstrations)) {
+    throw invalid("config.anchorDemonstrations must be an array.");
   }
   return config;
 }

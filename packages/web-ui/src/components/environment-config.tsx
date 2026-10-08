@@ -27,7 +27,8 @@ export function EnvironmentConfigFields({
   const mail = integrations.find((item) => item.kind === "mail");
   const payments = integrations.find((item) => item.kind === "payments");
 
-  const runtime = value.runtime ?? DEFAULT_RUNTIME;
+  const automaticRuntime = runtimes.find((item) => item.id === "anchor" && item.configured) ? "anchor" : DEFAULT_RUNTIME;
+  const runtime = value.runtime ?? automaticRuntime;
   const selectedRuntime = runtimes.find((item) => item.id === runtime);
   const model = value.model ?? "";
   const selectedModel = models.find((item) => model.startsWith(`${item.id}/`) || model === item.id);
@@ -44,7 +45,7 @@ export function EnvironmentConfigFields({
           id={`${idPrefix}-runtime`}
           aria-label="Runtime"
           value={runtime}
-          onValueChange={(next) => set("runtime", next === DEFAULT_RUNTIME ? "" : next)}
+          onValueChange={(next) => set("runtime", next === automaticRuntime ? "" : next)}
           options={
             runtimes.length > 0
               ? runtimes.map((item) => ({ value: item.id, label: integrationLabel(item) }))
@@ -56,6 +57,29 @@ export function EnvironmentConfigFields({
           <p className="text-xs text-wait">Set {selectedRuntime.envVars.join(", ")} on the server before the first run.</p>
         ) : null}
       </div>
+      {runtime === "anchor" ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor={`${idPrefix}-anchor-identity`}>Anchor identity</Label>
+            <Input
+              id={`${idPrefix}-anchor-identity`}
+              value={value.anchorIdentityId ?? ""}
+              onChange={(event) => set("anchorIdentityId", event.target.value)}
+              placeholder="Managed identity id (optional)"
+            />
+            <p className="text-xs text-muted">Reuses authentication and supports managed reauthentication.</p>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor={`${idPrefix}-anchor-profile`}>Anchor profile</Label>
+            <Input
+              id={`${idPrefix}-anchor-profile`}
+              value={value.anchorProfile ?? ""}
+              onChange={(event) => set("anchorProfile", event.target.value)}
+              placeholder="Persistent profile name (optional)"
+            />
+          </div>
+        </div>
+      ) : null}
       <div className="space-y-1.5">
         <Label htmlFor={`${idPrefix}-model`}>Default model</Label>
         <Input

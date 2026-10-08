@@ -1,5 +1,12 @@
 export { IntegrationSetupError, loadOptional, requireEnv } from "./setup.js";
 export {
+  anchorConfigured,
+  createAnchorDemonstration,
+  getAnchorDemonstration,
+  reauthenticateAnchorIdentity,
+} from "./anchor.js";
+export type { AnchorDemonstration, AnchorTaskMemory } from "./anchor.js";
+export {
   anchorRuntime,
   browserbaseRuntime,
   kernelRuntime,

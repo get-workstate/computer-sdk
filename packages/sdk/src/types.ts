@@ -185,6 +185,11 @@ export interface RuntimeSession {
   cdpUrl?: string;
   /** Provider-hosted live view, when the browser runs somewhere else. */
   liveViewUrl?: string;
+  /** Provider-specific session metadata exposed to adapters without leaking credentials. */
+  provider?: {
+    name: string;
+    sessionId?: string;
+  };
   stop(): Promise<void>;
 }
 
@@ -288,6 +293,11 @@ export interface AdapterRunInput {
   systemPrompt: string;
   serverUrl: string;
   cdpUrl?: string;
+  /** Runtime identity for adapters that use provider-native tasks in the same session. */
+  runtime?: {
+    name: string;
+    sessionId?: string;
+  };
   integrations?: RunIntegrations;
   /** Force a local/scripted recipe id. See GET /api/recipes. */
   recipe?: string;

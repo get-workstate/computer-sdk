@@ -63,6 +63,21 @@ curl -s -X POST http://127.0.0.1:4780/api/environments/acme/human \
 
 `decline` fails the run. `stop` cancels it. `POST /api/runs/<id>/cancel` cancels from the run id.
 
+## Anchor demonstrations and authentication
+
+When `ANCHOR_API_KEY` is set, environments without an explicit runtime or model use Anchor and `anchor/agent`. Without it they use local Chromium and `local/scripted`.
+
+```bash
+curl -s -X POST http://127.0.0.1:4780/api/environments/acme/anchor/demonstrations \
+  -H 'content-type: application/json' \
+  -d '{"name":"Download invoice","description":"Open Billing and download the latest invoice"}'
+```
+
+Give the returned `share_url` to the demonstrator. Poll
+`GET /api/environments/acme/anchor/demonstrations/<session_id>`. Once Anchor reports `completed`, Workstate stores the resulting Automation Task in `config.anchorTasks`; matching prompts use that task in the current Anchor session.
+
+Set `config.anchorIdentityId` to start Anchor sessions with a managed identity. `POST /api/environments/acme/anchor/reauthenticate` with `{}` validates and refreshes it.
+
 ## Files and shell
 
 ```bash

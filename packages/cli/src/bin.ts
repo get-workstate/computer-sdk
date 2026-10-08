@@ -42,6 +42,7 @@ Usage:
   workstate run [--env acme] [--model local/scripted] [--url http://127.0.0.1:${DEFAULT_PORT}] "prompt"
   workstate env create <name> [--runtime local|docker|anchor|browserbase|steel|kernel|e2b|daytona]
                               [--model <adapter>/<model>] [--credentials op://Vault/Item]
+                              [--anchor-identity-id <id>] [--anchor-profile <name>]
                               [--mailbox <agentmail inbox>] [--payments agentcard]
   workstate env set <name> [same flags as create; --no-<flag> clears a setting]
   workstate env list
@@ -51,8 +52,8 @@ Usage:
   workstate skills list --env <name>
   workstate setup
 
-The local scripted model needs no API key. It can download the demo shop invoice,
-summarize Hacker News, or open an explicit URL.
+Set ANCHOR_API_KEY to make Anchor the default runtime and native model. Without it,
+Workstate falls back to local Chromium and the local scripted model.
 
 Integrations are selected per environment and read their API keys from the server's
 environment variables. \`workstate integrations\` shows what each one needs.
@@ -65,6 +66,7 @@ const CONFIG_FLAGS = [
   "credentials",
   "mailbox",
   "payments",
+  "anchor-identity-id",
   "anchor-profile",
   "browserbase-context-id",
   "kernel-profile",

@@ -85,7 +85,15 @@ Batteries included:
 
 ## Quickstart
 
-1. Connect the SDK to your server. The control plane is that server.
+1. Set an Anchor API key on the Workstate server. Anchor is the recommended browser, auth, demonstration, and task-memory layer.
+
+```bash
+export ANCHOR_API_KEY="..."
+```
+
+No key is required for development: Workstate automatically falls back to persistent local Chromium and local skills.
+
+2. Connect the SDK to your server. The control plane is that server.
 
 ```ts
 import { Workstate } from "@workstate/sdk";
@@ -94,7 +102,7 @@ const ws = new Workstate({ url: "http://127.0.0.1:4780" });
 const env = await ws.environment("acme");
 ```
 
-2. Connect the MCP server, or the SDK, to your agent loop.
+3. Connect the MCP server, or the SDK, to your agent loop.
 
 ```ts
 const computer = env.asTool();
@@ -105,7 +113,9 @@ computer.anthropic;
 await computer.execute({ prompt: "Download the latest invoice from the demo shop" });
 ```
 
-3. Done.
+4. Done.
+
+With Anchor, `env.startAnchorDemonstration(...)` creates a secure manual-demonstration link. When the demonstration finishes, poll `env.getAnchorDemonstration(id)`; Workstate records the generated Anchor Automation Task and reuses it when later prompts match. Set `anchorIdentityId` on the environment to use Anchor managed authentication. Without Anchor, `local/scripted` persists local procedures, and `browser-harness/*` can save and replay browser code through Workstate skills.
 
 ---
 

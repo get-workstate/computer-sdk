@@ -27,6 +27,8 @@ export async function openAnchorBrowser(environment: RuntimeEnvironment): Promis
   const { ANCHOR_API_KEY } = requireEnv("Anchor Browser", ["ANCHOR_API_KEY"], "https://docs.anchorbrowser.io/quickstart/create-session");
   const headers = { "anchor-api-key": ANCHOR_API_KEY, "content-type": "application/json" };
   const profile = configString(environment.config, "anchorProfile") ?? env("WORKSTATE_ANCHOR_PROFILE");
+  const identityId = configString(environment.config, "anchorIdentityId");
+  const skipIdentityValidation = environment.config.anchorIdentitySkipValidation !== false;
   const body: Record<string, unknown> = {
     session: { timeout: { max_duration: 60, idle_timeout: 10 } },
     browser: {
@@ -34,6 +36,12 @@ export async function openAnchorBrowser(environment: RuntimeEnvironment): Promis
       viewport: { width: DEFAULT_VIEWPORT.width, height: DEFAULT_VIEWPORT.height },
       ...(profile ? { profile: { name: profile, persist: true } } : {}),
     },
+    ...(identityId
+      ? {
+          identities: [{ id: identityId }],
+          identity_skip_validation: skipIdentityValidation,
+        }
+      : {}),
   };
   const created = await jsonRequest<AnchorSession>("Anchor Browser", `${ANCHOR_API}/v1/sessions`, {
     method: "POST",
@@ -46,6 +54,7 @@ export async function openAnchorBrowser(environment: RuntimeEnvironment): Promis
   return {
     cdpUrl,
     liveViewUrl: created.data?.live_view_url,
+    provider: { name: "anchor", sessionId: id },
     stop: async () => {
       await fetch(`${ANCHOR_API}/v1/sessions/${encodeURIComponent(id)}`, { method: "DELETE", headers }).catch(() => undefined);
     },

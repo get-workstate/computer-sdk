@@ -1,4 +1,11 @@
-import { ENVIRONMENT_CONFIG_KEYS, describeIntegrations } from "@workstate/integrations";
+import {
+  ENVIRONMENT_CONFIG_KEYS,
+  createAnchorDemonstration,
+  describeIntegrations,
+  getAnchorDemonstration,
+  reauthenticateAnchorIdentity,
+  type AnchorTaskMemory,
+} from "@workstate/integrations";
 import { LocalFiles, LocalShell } from "@workstate/runtime-local";
 import { defaultModel, describeAdapters, describeRecipes, listAdapters, RECIPE_IDS } from "@workstate/model-adapters";
 import { VERSION } from "./config.js";
@@ -15,6 +22,12 @@ const MODEL_CATALOG = [
     name: "local",
     label: "Local scripted",
     description: "No API key. Demo shop invoices, Hacker News, and explicit URLs.",
+  },
+  {
+    id: "anchor/agent",
+    name: "anchor",
+    label: "Anchor native agent",
+    description: "Uses Anchor's web agent and replays Automation Tasks learned from demonstrations.",
   },
   {
     id: "openai/computer-use-preview",
@@ -132,6 +145,88 @@ export function registerApi(app: Hono, ctx: AppContext): void {
     return c.json(await new FilesystemSkills(env.paths.skills).list());
   });
 
+  app.post("/api/environments/:ref/anchor/demonstrations", async (c) => {
+    const env = requireEnv(ctx, c.req.param("ref"));
+    const body = await readJson<{
+      name?: string;
+      description?: string;
+      identityId?: string;
+      userName?: string;
+      startUrl?: string;
+    }>(c);
+    if (!body.name?.trim() || !body.description?.trim()) {
+      throw httpError(400, "invalid_demonstration", "name and description are required.");
+    }
+    const identityId =
+      body.identityId?.trim() ||
+      (typeof env.config.anchorIdentityId === "string" ? env.config.anchorIdentityId : undefined);
+    const demonstration = await createAnchorDemonstration({
+      taskName: body.name.trim(),
+      taskDescription: body.description.trim(),
+      identityId,
+      userName: body.userName?.trim(),
+      startUrl: body.startUrl?.trim(),
+    });
+    const pending = Array.isArray(env.config.anchorDemonstrations)
+      ? (env.config.anchorDemonstrations as Array<Record<string, unknown>>)
+      : [];
+    ctx.environments.updateConfig(env.id, {
+      anchorDemonstrations: [
+        ...pending.filter((item) => item.sessionId !== demonstration.session_id),
+        {
+          sessionId: demonstration.session_id,
+          name: body.name.trim(),
+          description: body.description.trim(),
+          tags: memoryTags(`${body.name} ${body.description}`),
+        },
+      ],
+      ...(identityId && identityId !== env.config.anchorIdentityId ? { anchorIdentityId: identityId } : {}),
+    });
+    return c.json(demonstration, 201);
+  });
+
+  app.get("/api/environments/:ref/anchor/demonstrations/:id", async (c) => {
+    const env = requireEnv(ctx, c.req.param("ref"));
+    const demonstration = await getAnchorDemonstration(c.req.param("id"));
+    let learnedTask: AnchorTaskMemory | null = null;
+    if (demonstration.status === "completed" && demonstration.task_id) {
+      const pending = Array.isArray(env.config.anchorDemonstrations)
+        ? (env.config.anchorDemonstrations as Array<Record<string, unknown>>)
+        : [];
+      const existing = Array.isArray(env.config.anchorTasks) ? (env.config.anchorTasks as AnchorTaskMemory[]) : [];
+      const source =
+        pending.find((item) => item.sessionId === demonstration.session_id) ??
+        existing.find((task) => task.taskId === demonstration.task_id);
+      learnedTask = {
+        taskId: demonstration.task_id,
+        name: typeof source?.name === "string" ? source.name : `Anchor task ${demonstration.task_id}`,
+        description: typeof source?.description === "string" ? source.description : "Learned from an Anchor demonstration.",
+        tags: Array.isArray(source?.tags) ? source.tags.filter((tag): tag is string => typeof tag === "string") : [],
+        taskVersionId: demonstration.task_version_id,
+        toolId: demonstration.tool_id,
+      };
+      ctx.environments.updateConfig(env.id, {
+        anchorTasks: [...existing.filter((task) => task.taskId !== learnedTask!.taskId), learnedTask],
+        anchorDemonstrations: pending.filter((item) => item.sessionId !== demonstration.session_id),
+      });
+    }
+    return c.json({ demonstration, learnedTask });
+  });
+
+  app.post("/api/environments/:ref/anchor/reauthenticate", async (c) => {
+    const env = requireEnv(ctx, c.req.param("ref"));
+    const body = await readJson<{ identityId?: string }>(c);
+    const identityId =
+      body.identityId?.trim() ||
+      (typeof env.config.anchorIdentityId === "string" ? env.config.anchorIdentityId : undefined);
+    if (!identityId) {
+      throw httpError(400, "anchor_identity_required", "Set config.anchorIdentityId or pass identityId.");
+    }
+    const result = await reauthenticateAnchorIdentity(identityId);
+    if (identityId !== env.config.anchorIdentityId) ctx.environments.updateConfig(env.id, { anchorIdentityId: identityId });
+    return c.json(result);
+  });
+
   app.get("/api/environments/:ref/files", async (c) => {
     const env = requireEnv(ctx, c.req.param("ref"));
     const virtualPath = c.req.query("path") || "/workspace";
@@ -236,6 +331,18 @@ function requireEnv(ctx: AppContext, ref: string) {
 
 function roots(env: { paths: { files: string; skills: string } }) {
   return { files: env.paths.files, skills: env.paths.skills };
+}
+
+function memoryTags(value: string): string[] {
+  const ignored = new Set(["the", "and", "for", "from", "with", "into", "this", "that", "task"]);
+  return [
+    ...new Set(
+      value
+        .toLowerCase()
+        .split(/[^a-z0-9]+/)
+        .filter((token) => token.length > 2 && !ignored.has(token)),
+    ),
+  ].slice(0, 16);
 }
 
 async function readJson<T>(c: Context): Promise<T> {

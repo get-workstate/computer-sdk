@@ -31,7 +31,15 @@ export class Workstate {
 }
 
 export { Environment, RemoteHuman } from "./environment.js";
-export type { EnvironmentTool, HumanRespondInput, RunHandlers, RunOptions, ToolExecuteInput } from "./environment.js";
+export type {
+  AnchorDemonstration,
+  AnchorDemonstrationInput,
+  EnvironmentTool,
+  HumanRespondInput,
+  RunHandlers,
+  RunOptions,
+  ToolExecuteInput,
+} from "./environment.js";
 export { HttpClient, WorkstateError } from "./http.js";
 export { createId, nowIso } from "./id.js";
 export {

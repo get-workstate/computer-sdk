@@ -3,10 +3,12 @@ import test from "node:test";
 import type { AdapterRunInput, Computer } from "@workstate/sdk";
 import {
   denormalize,
+  defaultModel,
   executeTool,
   geminiKey,
   integrationTools,
   listAdapters,
+  matchAnchorTask,
   parseStagehandModel,
   performComputerAction,
   performGeminiAction,
@@ -58,6 +60,7 @@ function recordingComputer(): { computer: Computer; calls: string[] } {
 
 test("model ids route to the right adapter", () => {
   assert.equal(resolveAdapter("local/scripted").name, "local");
+  assert.equal(resolveAdapter("anchor/agent").name, "anchor");
   assert.equal(resolveAdapter("openai/computer-use-preview").name, "openai");
   assert.equal(resolveAdapter("anthropic/claude-sonnet-4-5").name, "anthropic");
   assert.equal(resolveAdapter("gemini/gemini-3.8-flash").name, "gemini");
@@ -67,20 +70,50 @@ test("model ids route to the right adapter", () => {
   assert.equal(resolveAdapter("browser-use/cloud").name, "browser-use");
   assert.equal(resolveAdapter("browser-harness/anthropic/claude-sonnet-4-5").name, "browser-harness");
   const names = listAdapters().map((adapter) => adapter.name);
-  for (const name of ["local", "openai", "anthropic", "gemini", "stagehand", "browser-use", "browser-harness"]) {
+  for (const name of ["local", "anchor", "openai", "anthropic", "gemini", "stagehand", "browser-use", "browser-harness"]) {
     assert.ok(names.includes(name), name);
   }
 });
 
 test("adapters that need keys report unavailable without them", () => {
   const saved = { ...process.env };
-  for (const key of ["OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "BROWSER_USE_API_KEY"]) delete process.env[key];
+  for (const key of ["ANCHOR_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY", "GEMINI_API_KEY", "GOOGLE_API_KEY", "BROWSER_USE_API_KEY"]) delete process.env[key];
   try {
     for (const adapter of listAdapters()) {
       assert.equal(adapter.available(), adapter.name === "local", `${adapter.name} should be unavailable without keys`);
     }
   } finally {
     process.env = saved;
+  }
+});
+
+test("Anchor tasks match at least two learned tags", () => {
+  const config = {
+    anchorTasks: [
+      {
+        taskId: "task_invoice",
+        name: "Download invoice",
+        description: "Download invoice",
+        tags: ["download", "invoice", "billing"],
+      },
+    ],
+  };
+  assert.equal(matchAnchorTask("Download the latest invoice", config)?.taskId, "task_invoice");
+  assert.equal(matchAnchorTask("Inspect billing", config), null);
+});
+
+test("Anchor is the default model when configured", () => {
+  const saved = process.env.ANCHOR_API_KEY;
+  const savedDefault = process.env.WORKSTATE_DEFAULT_MODEL;
+  try {
+    delete process.env.WORKSTATE_DEFAULT_MODEL;
+    process.env.ANCHOR_API_KEY = "test";
+    assert.equal(defaultModel(), "anchor/agent");
+  } finally {
+    if (saved === undefined) delete process.env.ANCHOR_API_KEY;
+    else process.env.ANCHOR_API_KEY = saved;
+    if (savedDefault === undefined) delete process.env.WORKSTATE_DEFAULT_MODEL;
+    else process.env.WORKSTATE_DEFAULT_MODEL = savedDefault;
   }
 });
 

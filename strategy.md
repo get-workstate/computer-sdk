@@ -69,6 +69,18 @@ Durable copies, not in git: `/cursor/stores/self/docs/workstate-integration-lab/
 
 Checked live on port 4780 after the API change: invoice handoff plus skill replay (`lab4-billing`), explicit URL over the words "demo shop" plus forced Hacker News (`lab5-clerk`, `lab5-hn`), `invalid_recipe` / `no_recipe` / cancel (`lab6-guard`), shell+files, live frame, and Anchor `integration_not_configured` (`lab7-ops`, `lab7-anchor`), and `asTool()` plus a 1Password miss falling through to `needs_human` (`lab8-delegate`). The live socket path is `/ws/live/:name`. `env.run()` / `asTool().execute()` block until the run is terminal, so a handoff must be answered or cancelled from another request. Long-poll responses contain only events after `after`; clients have to accumulate them to see the `plan` event.
 
+## Anchor first-class integration (2026-10-08)
+
+- The earlier labs only tested Anchor's missing-key failure. A real ephemeral key was obtained through Anchor's documented `/v1/agent-access` challenge and kept only in `/tmp`; never commit it.
+- Real CDP smoke: created an Anchor session, attached `PlaywrightComputer`, opened `https://example.com`, and captured a 1280×800 screenshot plus provider live-view URL.
+- With `ANCHOR_API_KEY`, runtime selection now defaults to `anchor` and model selection to `anchor/agent`; explicit environment/server choices still win. Without the key both fall back to local Chromium and `local/scripted`. Leave `WORKSTATE_RUNTIME` blank in `.env` to get this automatic behavior.
+- Real control-plane run with empty environment config: session runtime `anchor`, plan `anchor_agent/perform-web-task`, success result `Example Domain`.
+- Manual demonstration API was run for “Read example page title.” Browser QA submitted the Anchor share link and saw “Thanks! Your recording has been saved.” Polling returned `completed` and stored task `ad74b257-123e-49a5-b7af-1e4332c25ddf` in `config.anchorTasks`.
+- A second Workstate run matched that memory, planned `source: anchor_task`, called Anchor's `/v2/tasks/:id/run` in the current session, and returned `{"page_title":"Example Domain"}`.
+- Managed auth: `config.anchorIdentityId` is passed as `identities: [{id}]` when an Anchor session starts; `anchorIdentitySkipValidation: false` forces validation. SDK/API reauthentication calls Anchor's identity endpoint. This payload is unit-tested, but no real managed identity was available for an external login test.
+- SDK: `startAnchorDemonstration`, `getAnchorDemonstration`, `reauthenticateAnchorIdentity`. HTTP routes live under `/api/environments/:ref/anchor/*`.
+- Local memory fallback remains Workstate skills. The browser-harness prompt now explicitly calls `skills_list`, saves successful code/decisions with `skills_write`, and replays matching procedures.
+
 ## Verified
 
 On this machine, 2026-10-06:

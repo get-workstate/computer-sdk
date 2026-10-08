@@ -10,6 +10,7 @@ import {
   extractCode,
   integrationsForEnvironment,
   onePassword,
+  openAnchorBrowser,
   parseSecretRef,
   runtimeIdFor,
 } from "../dist/index.js";
@@ -90,12 +91,54 @@ test("every hosted runtime fails fast with a setup error naming its env var when
 test("runtime selection prefers environment config, then WORKSTATE_RUNTIME, then local", () => {
   withoutKeys(() => {
     assert.equal(runtimeIdFor(undefined), "local");
+    process.env.ANCHOR_API_KEY = "test";
+    assert.equal(runtimeIdFor(undefined), "anchor");
+    assert.equal(runtimeIdFor({ runtime: "local" }), "local");
+    delete process.env.ANCHOR_API_KEY;
     assert.equal(runtimeIdFor({ runtime: "anchor" }), "anchor");
     assert.equal(runtimeIdFor({ runtime: "nope" }), "local");
     process.env.WORKSTATE_RUNTIME = "docker";
     assert.equal(runtimeIdFor({}), "docker");
     assert.equal(runtimeIdFor({ runtime: "steel" }), "steel");
   });
+});
+
+test("Anchor sessions include managed identity settings and provider metadata", async () => {
+  const savedKey = process.env.ANCHOR_API_KEY;
+  const savedFetch = globalThis.fetch;
+  process.env.ANCHOR_API_KEY = "test";
+  let createBody: Record<string, unknown> | null = null;
+  globalThis.fetch = async (_input, init) => {
+    if (init?.method === "POST") {
+      createBody = JSON.parse(String(init.body)) as Record<string, unknown>;
+      return new Response(
+        JSON.stringify({
+          data: {
+            id: "anchor_session",
+            cdp_url: "ws://anchor.test/cdp",
+            live_view_url: "https://anchor.test/live",
+          },
+        }),
+        { status: 201 },
+      );
+    }
+    return new Response("", { status: 204 });
+  };
+  try {
+    const remote = await openAnchorBrowser({
+      ...fakeEnv,
+      config: { anchorIdentityId: "identity_1", anchorIdentitySkipValidation: false },
+    });
+    assert.equal(remote.provider?.name, "anchor");
+    assert.equal(remote.provider?.sessionId, "anchor_session");
+    assert.deepEqual(createBody?.identities, [{ id: "identity_1" }]);
+    assert.equal(createBody?.identity_skip_validation, false);
+    await remote.stop();
+  } finally {
+    globalThis.fetch = savedFetch;
+    if (savedKey === undefined) delete process.env.ANCHOR_API_KEY;
+    else process.env.ANCHOR_API_KEY = savedKey;
+  }
 });
 
 test("describeIntegrations covers every runtime id and reports unconfigured without keys", () => {

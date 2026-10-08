@@ -15,12 +15,13 @@ export function isRuntimeId(value: unknown): value is RuntimeId {
   return typeof value === "string" && (RUNTIME_IDS as readonly string[]).includes(value);
 }
 
-/** Resolve which runtime an environment uses: its config, then WORKSTATE_RUNTIME, then local. */
+/** Resolve runtime: environment config, explicit server default, Anchor when configured, then local. */
 export function runtimeIdFor(config: Record<string, unknown> | undefined): RuntimeId {
   const fromConfig = config?.runtime;
   if (isRuntimeId(fromConfig)) return fromConfig;
   const fromEnv = env("WORKSTATE_RUNTIME");
   if (isRuntimeId(fromEnv)) return fromEnv;
+  if (env("ANCHOR_API_KEY")) return "anchor";
   return "local";
 }
 
@@ -55,10 +56,10 @@ export function describeRuntimes(): IntegrationDescriptor[] {
       id: "local",
       kind: "runtime",
       name: "Local Chromium",
-      description: "Persistent Playwright Chromium profile on this machine. Shell and files live in the environment directory.",
+      description: "Automatic fallback when Anchor is not configured. Persistent Playwright Chromium profile and local skill replay.",
       envVars: [],
       configured: true,
-      select: 'config.runtime = "local" (default)',
+      select: 'config.runtime = "local" (fallback)',
       status: "verified",
     },
     {
@@ -76,12 +77,12 @@ export function describeRuntimes(): IntegrationDescriptor[] {
       id: "anchor",
       kind: "runtime",
       name: "Anchor Browser",
-      description: "Cloud Chromium over CDP with a live view. Optional named profile persists logins between sessions.",
+      description: "Preferred runtime when configured: cloud Chromium, managed identities, manual demonstrations, and reusable Automation Tasks.",
       envVars: ["ANCHOR_API_KEY", "WORKSTATE_ANCHOR_PROFILE"],
       configured: has("ANCHOR_API_KEY"),
-      select: 'config.runtime = "anchor"',
+      select: 'Set ANCHOR_API_KEY (automatic default), or config.runtime = "anchor"',
       docsUrl: "https://docs.anchorbrowser.io",
-      status: "untested",
+      status: "verified",
     },
     {
       id: "browserbase",
@@ -213,6 +214,9 @@ export const ENVIRONMENT_CONFIG_KEYS = {
   mailbox: 'AgentMail inbox id or address, or "new" to create one on first use',
   payments: 'Set to "agentcard" to let the agent issue approved single-use cards',
   anchorProfile: "Anchor Browser profile name to persist logins",
+  anchorIdentityId: "Anchor managed identity id for authentication and task runs",
+  anchorIdentitySkipValidation: "Set false to validate and reauthenticate the Anchor identity when sessions start",
+  anchorTasks: "Reusable Anchor Automation Tasks learned from manual demonstrations",
   browserbaseContextId: "Browserbase context id to persist cookies",
   kernelProfile: "Kernel profile name to persist logins",
   e2bTemplate: "E2B template built from packages/runtime-docker/Dockerfile",

@@ -35,6 +35,25 @@ export interface ToolExecuteInput {
   model?: string;
 }
 
+export interface AnchorDemonstrationInput {
+  name: string;
+  description: string;
+  identityId?: string;
+  userName?: string;
+  startUrl?: string;
+}
+
+export interface AnchorDemonstration {
+  session_id: string;
+  status?: "recording" | "processing" | "completed" | "failed" | "stopped";
+  share_url?: string;
+  live_view_url?: string;
+  share_expires_at?: string;
+  task_id?: string;
+  task_version_id?: string;
+  tool_id?: string;
+}
+
 export interface EnvironmentTool {
   name: string;
   description: string;
@@ -97,6 +116,25 @@ export class Environment {
     const updated = await this.client.patch<EnvironmentRecord>(`/api/environments/${encodeURIComponent(this.record.id)}`, { config });
     Object.assign(this.record, updated);
     return updated;
+  }
+
+  /** Create a secure Anchor manual-demonstration link. Poll it until Anchor compiles a reusable task. */
+  startAnchorDemonstration(input: AnchorDemonstrationInput): Promise<AnchorDemonstration> {
+    return this.client.post(`/api/environments/${encodeURIComponent(this.name)}/anchor/demonstrations`, input);
+  }
+
+  /** Poll a demonstration. A completed demonstration is saved as an Anchor task memory on this environment. */
+  getAnchorDemonstration(id: string): Promise<{ demonstration: AnchorDemonstration; learnedTask: unknown | null }> {
+    return this.client.get(
+      `/api/environments/${encodeURIComponent(this.name)}/anchor/demonstrations/${encodeURIComponent(id)}`,
+    );
+  }
+
+  /** Validate and refresh the environment's Anchor managed identity. */
+  reauthenticateAnchorIdentity(identityId?: string): Promise<Record<string, unknown>> {
+    return this.client.post(`/api/environments/${encodeURIComponent(this.name)}/anchor/reauthenticate`, {
+      identityId,
+    });
   }
 
   async run(promptOrOptions: string | RunOptions, handlers?: RunHandlers): Promise<RunRecord> {

@@ -70,7 +70,7 @@ export const harnessTool: ToolSpec = {
 };
 
 const HARNESS_PROMPT =
-  "You control a real Chromium browser through browser-harness. Use harness_exec to run short Python snippets; always print the information you need. Start navigation with new_tab(url). After harness_exec you can read the page with computer_text or computer_extract, and the shell, files, skills, and human_request tools work as usual. Call finish when done.";
+  "You control a real Chromium browser through browser-harness. Use harness_exec to run short Python snippets; always print the information you need. Before repeating a known job, call skills_list and replay the matching saved procedure. Start navigation with new_tab(url). After harness_exec you can read the page with computer_text or computer_extract. When a job succeeds, call skills_write with the reusable browser-harness code and decisions as the procedure so the next run can replay the trajectory locally. Shell, files, skills, and human_request tools work as usual. Call finish when done.";
 
 /**
  * browser-use/browser-harness as the tool layer, with an OpenAI or Anthropic chat model as the
