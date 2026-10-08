@@ -28,6 +28,7 @@ interface RunRow {
   model: string;
   status: RunStatus;
   error: string | null;
+  error_code: string | null;
   result: string | null;
   human_request: string | null;
   created_at: string;
@@ -88,6 +89,7 @@ export class Db {
         model TEXT NOT NULL,
         status TEXT NOT NULL,
         error TEXT,
+        error_code TEXT,
         result TEXT,
         human_request TEXT,
         created_at TEXT NOT NULL,
@@ -106,6 +108,10 @@ export class Db {
       CREATE INDEX IF NOT EXISTS runs_env_created ON runs(environment_id, created_at);
       CREATE INDEX IF NOT EXISTS run_events_run ON run_events(run_id, id);
     `);
+    const columns = this.sqlite.prepare("PRAGMA table_info(runs)").all() as unknown as Array<{ name: string }>;
+    if (!columns.some((column) => column.name === "error_code")) {
+      this.sqlite.exec("ALTER TABLE runs ADD COLUMN error_code TEXT");
+    }
   }
 
   close(): void {
@@ -167,7 +173,7 @@ export class Db {
     this.sqlite
       .prepare(
         `UPDATE runs
-         SET status = 'failed', error = ?, updated_at = ?, finished_at = COALESCE(finished_at, ?)
+         SET status = 'failed', error = ?, error_code = 'interrupted', updated_at = ?, finished_at = COALESCE(finished_at, ?)
          WHERE status IN ('queued', 'running', 'waiting_for_human', 'human_controlling', 'resumed')`,
       )
       .run(message, stamp, stamp);
@@ -177,9 +183,9 @@ export class Db {
     this.sqlite
       .prepare(
         `INSERT INTO runs (
-          id, environment_id, environment_name, session_id, prompt, model, status, error, result, human_request,
+          id, environment_id, environment_name, session_id, prompt, model, status, error, error_code, result, human_request,
           created_at, updated_at, started_at, finished_at
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         run.id,
@@ -190,6 +196,7 @@ export class Db {
         run.model,
         run.status,
         run.error,
+        run.errorCode,
         run.result ? JSON.stringify(run.result) : null,
         run.humanRequest ? JSON.stringify(run.humanRequest) : null,
         run.createdAt,
@@ -203,7 +210,7 @@ export class Db {
     this.sqlite
       .prepare(
         `UPDATE runs SET
-          session_id = ?, status = ?, error = ?, result = ?, human_request = ?,
+          session_id = ?, status = ?, error = ?, error_code = ?, result = ?, human_request = ?,
           updated_at = ?, started_at = ?, finished_at = ?
          WHERE id = ?`,
       )
@@ -211,6 +218,7 @@ export class Db {
         run.sessionId,
         run.status,
         run.error,
+        run.errorCode,
         run.result ? JSON.stringify(run.result) : null,
         run.humanRequest ? JSON.stringify(run.humanRequest) : null,
         run.updatedAt,
@@ -298,6 +306,7 @@ function mapRun(row: RunRow): RunRecord {
     model: row.model,
     status: row.status,
     error: row.error,
+    errorCode: row.error_code,
     result: parseJson(row.result),
     humanRequest: parseJson(row.human_request),
     createdAt: row.created_at,

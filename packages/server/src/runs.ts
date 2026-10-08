@@ -42,6 +42,7 @@ export class RunManager {
   private readonly waiters = new Map<string, Set<() => void>>();
   private readonly aborts = new Map<string, AbortController>();
   private readonly humanWaiters = new Map<string, (response: HumanResponse) => void>();
+  private readonly recipes = new Map<string, string>();
 
   constructor(
     private readonly db: Db,
@@ -50,7 +51,7 @@ export class RunManager {
     private readonly options: { publicUrl: string; adapter?: CuaAdapter },
   ) {}
 
-  create(env: EnvironmentRecord, input: { prompt: string; model?: string }): RunRecord {
+  create(env: EnvironmentRecord, input: { prompt: string; model?: string; recipe?: string }): RunRecord {
     const prompt = input.prompt.trim();
     if (!prompt) throw httpError(400, "invalid_prompt", "A run needs a prompt.");
     if (prompt.length > 8000) throw httpError(400, "invalid_prompt", "Prompt is too long.");
@@ -64,6 +65,7 @@ export class RunManager {
       model: input.model?.trim() || (typeof env.config.model === "string" && env.config.model.trim()) || defaultModel(),
       status: "queued",
       error: null,
+      errorCode: null,
       result: null,
       humanRequest: null,
       createdAt: stamp,
@@ -72,6 +74,7 @@ export class RunManager {
       finishedAt: null,
     };
     this.db.insertRun(run);
+    if (input.recipe?.trim()) this.recipes.set(run.id, input.recipe.trim());
     this.emit(run.id, "status", "Run queued");
     this.kick(env.id);
     return this.db.getRun(run.id)!;
@@ -96,6 +99,7 @@ export class RunManager {
       model: "human",
       status: "waiting_for_human",
       error: null,
+      errorCode: "needs_human",
       result: null,
       humanRequest,
       createdAt: stamp,
@@ -104,7 +108,7 @@ export class RunManager {
       finishedAt: null,
     };
     this.db.insertRun(run);
-    this.emit(run.id, "human", message, humanRequest);
+    this.emit(run.id, "human", message, { ...humanRequest, code: "needs_human" });
     return run;
   }
 
@@ -149,7 +153,7 @@ export class RunManager {
   cancel(runId: string): RunRecord {
     const run = this.must(runId);
     if (isTerminalStatus(run.status)) return run;
-    this.update(runId, { status: "cancelled", finishedAt: nowIso(), humanRequest: null, error: null });
+    this.update(runId, { status: "cancelled", finishedAt: nowIso(), humanRequest: null, error: null, errorCode: null });
     this.emit(runId, "status", "Run cancelled");
     this.aborts.get(runId)?.abort();
     if (run.humanRequest) this.humanWaiters.delete(run.humanRequest.id);
@@ -192,7 +196,7 @@ export class RunManager {
     const waiter = this.humanWaiters.get(run.humanRequest.id);
     this.humanWaiters.delete(run.humanRequest.id);
     if (waiter) {
-      this.update(run.id, { status: "resumed", humanRequest: null });
+      this.update(run.id, { status: "resumed", humanRequest: null, errorCode: null });
       this.emit(run.id, "status", ACTION_MESSAGE[action] ?? "Control returned to the agent");
       waiter(response);
       return this.db.getRun(run.id)!;
@@ -201,10 +205,11 @@ export class RunManager {
       this.update(run.id, {
         status: "failed",
         error: "Declined by a person",
+        errorCode: "declined",
         humanRequest: null,
         finishedAt: nowIso(),
       });
-      this.emit(run.id, "error", "Declined by a person");
+      this.emit(run.id, "error", "Declined by a person", { code: "declined" });
     } else {
       const text =
         action === "answer"
@@ -215,6 +220,7 @@ export class RunManager {
       this.update(run.id, {
         status: "success",
         result: { text },
+        errorCode: null,
         humanRequest: null,
         finishedAt: nowIso(),
       });
@@ -295,6 +301,7 @@ export class RunManager {
         serverUrl: this.options.publicUrl,
         cdpUrl: session.runtime.cdpUrl,
         integrations,
+        recipe: this.recipes.get(runId),
         log: (kind, message, data) => {
           if (kind === "skill_created") return;
           this.emit(runId, kind, message, data);
@@ -303,13 +310,15 @@ export class RunManager {
       });
       const latest = this.db.getRun(runId);
       if (!latest || latest.status === "cancelled" || ac.signal.aborted) return;
-      this.update(runId, { status: "success", result: normalizeResult(result), finishedAt: nowIso(), humanRequest: null });
+      this.update(runId, { status: "success", result: normalizeResult(result), finishedAt: nowIso(), humanRequest: null, errorCode: null });
       this.emit(runId, "status", "Run finished");
     } catch (error) {
       const latest = this.db.getRun(runId);
       if (!latest || latest.status === "cancelled" || ac.signal.aborted) return;
       const message = error instanceof Error ? error.message : String(error);
-      this.fail(runId, message);
+      const code =
+        error && typeof error === "object" && "code" in error && typeof error.code === "string" ? error.code : "run_failed";
+      this.fail(runId, message, code);
     } finally {
       this.aborts.delete(runId);
       await this.persist(env.id, runId).catch(() => undefined);
@@ -317,11 +326,11 @@ export class RunManager {
     }
   }
 
-  private fail(runId: string, message: string): void {
+  private fail(runId: string, message: string, code = "run_failed"): void {
     const latest = this.db.getRun(runId);
     if (!latest || isTerminalStatus(latest.status)) return;
-    this.update(runId, { status: "failed", error: message, finishedAt: nowIso(), humanRequest: null });
-    this.emit(runId, "error", message);
+    this.update(runId, { status: "failed", error: message, errorCode: code, finishedAt: nowIso(), humanRequest: null });
+    this.emit(runId, "error", message, { code });
   }
 
   private createHuman(runId: string): Human {
@@ -334,8 +343,8 @@ export class RunManager {
           fields: input.fields,
           createdAt: nowIso(),
         };
-        this.update(runId, { status: "waiting_for_human", humanRequest: request });
-        this.emit(runId, "human", input.message, request);
+        this.update(runId, { status: "waiting_for_human", humanRequest: request, errorCode: "needs_human" });
+        this.emit(runId, "human", input.message, { ...request, code: "needs_human" });
         return new Promise((resolve, reject) => {
           const signal = this.aborts.get(runId)?.signal;
           const fail = () => {

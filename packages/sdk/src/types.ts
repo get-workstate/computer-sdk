@@ -156,6 +156,8 @@ export interface RunRecord {
   model: string;
   status: RunStatus;
   error: string | null;
+  /** Machine-readable reason: needs_human, no_recipe, invalid_recipe, declined, integration_not_configured, run_failed. */
+  errorCode: string | null;
   result: RunResult | null;
   humanRequest: HumanRequestRecord | null;
   createdAt: string;
@@ -287,6 +289,8 @@ export interface AdapterRunInput {
   serverUrl: string;
   cdpUrl?: string;
   integrations?: RunIntegrations;
+  /** Force a local/scripted recipe id. See GET /api/recipes. */
+  recipe?: string;
   log: (kind: string, message: string, data?: unknown) => void;
   abortSignal: AbortSignal;
 }

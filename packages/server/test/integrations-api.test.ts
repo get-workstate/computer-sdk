@@ -10,6 +10,46 @@ async function boot() {
   return createApp({ home, headless: true, publicUrl: "http://127.0.0.1:0", port: 0 });
 }
 
+test("/api/health, /api/recipes, and /openapi.json describe the control plane", async () => {
+  const { app, dispose } = await boot();
+  try {
+    const health = await app.request("/api/health");
+    assert.equal(health.status, 200);
+    const healthBody = (await health.json()) as { ok: boolean; version: string; defaultModel: string };
+    assert.equal(healthBody.ok, true);
+    assert.ok(healthBody.version);
+    assert.ok(healthBody.defaultModel);
+
+    const recipes = await app.request("/api/recipes");
+    const recipeBody = (await recipes.json()) as { recipes: Array<{ id: string }> };
+    assert.deepEqual(
+      recipeBody.recipes.map((recipe) => recipe.id),
+      ["download-latest-invoice", "summarize-hacker-news", "open-url"],
+    );
+
+    const spec = await app.request("/openapi.json");
+    assert.equal(spec.status, 200);
+    const document = (await spec.json()) as { paths: Record<string, unknown> };
+    assert.ok(document.paths["/api/environments/{ref}/runs"]);
+
+    const bad = await app.request("/api/environments", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ name: "probe" }),
+    });
+    assert.equal(bad.status, 201);
+    const rejected = await app.request("/api/environments/probe/runs", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ prompt: "Open it", recipe: "not-a-recipe" }),
+    });
+    assert.equal(rejected.status, 400);
+    assert.equal(((await rejected.json()) as { code: string }).code, "invalid_recipe");
+  } finally {
+    await dispose();
+  }
+});
+
 test("/api/integrations lists runtimes, services, and model adapters with configured status", async () => {
   const { app, dispose } = await boot();
   try {

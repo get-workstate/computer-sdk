@@ -405,7 +405,7 @@ packages/cli              the workstate command
 packages/web-ui           React console
 ```
 
-Start with `[docs/concepts.md](./docs/concepts.md)`, then `[docs/architecture.md](./docs/architecture.md)`, `[docs/hitl.md](./docs/hitl.md)`, `[docs/skills.md](./docs/skills.md)`, and `[docs/integrations.md](./docs/integrations.md)`.
+Start with `[docs/concepts.md](./docs/concepts.md)`, then `[docs/architecture.md](./docs/architecture.md)`, `[docs/http-api.md](./docs/http-api.md)`, `[docs/embed-node.md](./docs/embed-node.md)`, `[docs/hitl.md](./docs/hitl.md)`, `[docs/skills.md](./docs/skills.md)`, and `[docs/integrations.md](./docs/integrations.md)`.
 
 > Workstate has no authentication yet. Keep it on localhost or a private network.
 

@@ -33,77 +33,130 @@ export function matchSkill(skills: Skill[], prompt: string): Skill | null {
   return best?.skill ?? null;
 }
 
-export function resolveRecipe(prompt: string, ctx: { serverUrl: string }): Recipe | null {
+export const RECIPE_IDS = ["download-latest-invoice", "summarize-hacker-news", "open-url"] as const;
+export type RecipeId = (typeof RECIPE_IDS)[number];
+
+export interface RecipeInfo {
+  id: RecipeId;
+  description: string;
+  match: string;
+  persist: boolean;
+  human?: "login";
+}
+
+/** True when the prompt asks to download an invoice, not merely when it names a shop. */
+export function wantsInvoiceDownload(prompt: string): boolean {
+  const lower = prompt.toLowerCase();
+  return /\bdownload\b[\s\S]{0,80}\binvoice\b|\binvoice\b[\s\S]{0,80}\bdownload\b|\blatest invoice\b/.test(lower);
+}
+
+function invoiceRecipe(): Recipe {
+  return {
+    name: "download-latest-invoice",
+    description: "Download the latest invoice from the bundled demo shop and save it under /workspace/invoices.",
+    tags: ["invoice", "download", "shop", "demo", "latest"],
+    persist: true,
+    steps: [
+      { op: "open", url: "{{serverUrl}}/demo/shop/orders" },
+      { op: "ensureLoggedIn", message: LOGIN_MESSAGE },
+      { op: "extract", selector: "[data-order-id]", as: "orderId" },
+      { op: "extract", selector: "[data-order-total]", as: "total" },
+      { op: "extract", selector: "a[data-invoice]", as: "invoiceUrl" },
+      { op: "openVar", var: "invoiceUrl" },
+      { op: "saveText", path: "/workspace/invoices/{{orderId[0]}}.txt", text: "{{pageText}}" },
+      {
+        op: "output",
+        text: "Saved invoice {{orderId[0]}} ({{total[0]}}) to /workspace/invoices/{{orderId[0]}}.txt",
+      },
+    ],
+  };
+}
+
+function hackerNewsRecipe(): Recipe {
+  return {
+    name: "summarize-hacker-news",
+    description: "Save the titles from the Hacker News front page.",
+    tags: ["hacker", "news", "summarize", "hn", "frontpage"],
+    persist: true,
+    steps: [
+      { op: "open", url: "https://news.ycombinator.com/" },
+      { op: "extract", selector: ".titleline a", as: "titles" },
+      { op: "saveText", path: "/workspace/hacker-news-{{date}}.txt", text: "{{titles}}" },
+      { op: "output", text: "Saved the Hacker News front page to /workspace/hacker-news-{{date}}.txt" },
+    ],
+  };
+}
+
+function openUrlRecipe(url: string): Recipe {
+  return {
+    name: "open-url",
+    description: `Open ${url} and save the visible text.`,
+    tags: ["open", "url", "page"],
+    persist: false,
+    steps: [
+      { op: "open", url },
+      { op: "saveText", path: "/workspace/pages/page.txt", text: "{{title}}\n{{url}}\n\n{{pageText}}" },
+      { op: "output", text: "Saved {{title}} to /workspace/pages/page.txt" },
+    ],
+  };
+}
+
+export function describeRecipes(): RecipeInfo[] {
+  return [
+    {
+      id: "download-latest-invoice",
+      description: invoiceRecipe().description,
+      match: "Asks to download an invoice, or mentions an invoice or the demo shop and does not include an explicit URL.",
+      persist: true,
+      human: "login",
+    },
+    {
+      id: "summarize-hacker-news",
+      description: hackerNewsRecipe().description,
+      match: "Mentions Hacker News, Y Combinator, or HN, and does not include an explicit URL.",
+      persist: true,
+    },
+    {
+      id: "open-url",
+      description: "Open the first http(s) URL in the prompt and save the visible text.",
+      match: "Contains an http(s) URL. An explicit URL wins over the words invoice and demo shop unless the prompt also asks to download an invoice.",
+      persist: false,
+    },
+  ];
+}
+
+export function resolveRecipe(prompt: string, ctx: { serverUrl: string; recipe?: string }): Recipe | null {
   const lower = prompt.toLowerCase();
   const urlMatch = prompt.match(/https?:\/\/[^\s)]+/);
-  void ctx;
+  const forced = ctx.recipe?.trim();
+  void ctx.serverUrl;
 
-  if (/\binvoice\b|\bdemo shop\b/.test(lower)) {
-    return {
-      name: "download-latest-invoice",
-      description: "Download the latest invoice from the bundled demo shop and save it under /workspace/invoices.",
-      tags: ["invoice", "download", "shop", "demo", "latest"],
-      persist: true,
-      steps: [
-        { op: "open", url: "{{serverUrl}}/demo/shop/orders" },
-        { op: "ensureLoggedIn", message: LOGIN_MESSAGE },
-        { op: "extract", selector: "[data-order-id]", as: "orderId" },
-        { op: "extract", selector: "[data-order-total]", as: "total" },
-        { op: "extract", selector: "a[data-invoice]", as: "invoiceUrl" },
-        { op: "openVar", var: "invoiceUrl" },
-        { op: "saveText", path: "/workspace/invoices/{{orderId[0]}}.txt", text: "{{pageText}}" },
-        {
-          op: "output",
-          text: "Saved invoice {{orderId[0]}} ({{total[0]}}) to /workspace/invoices/{{orderId[0]}}.txt",
-        },
-      ],
-    };
-  }
+  if (forced === "download-latest-invoice") return invoiceRecipe();
+  if (forced === "summarize-hacker-news") return hackerNewsRecipe();
+  if (forced === "open-url") return urlMatch ? openUrlRecipe(urlMatch[0]) : null;
+  if (forced) return null;
 
-  if (/hacker news|\bycombinator\b|\bhn\b/.test(lower)) {
-    return {
-      name: "summarize-hacker-news",
-      description: "Save the titles from the Hacker News front page.",
-      tags: ["hacker", "news", "summarize", "hn", "frontpage"],
-      persist: true,
-      steps: [
-        { op: "open", url: "https://news.ycombinator.com/" },
-        { op: "extract", selector: ".titleline a", as: "titles" },
-        { op: "saveText", path: "/workspace/hacker-news-{{date}}.txt", text: "{{titles}}" },
-        { op: "output", text: "Saved the Hacker News front page to /workspace/hacker-news-{{date}}.txt" },
-      ],
-    };
-  }
-
-  if (urlMatch) {
-    const url = urlMatch[0];
-    return {
-      name: "open-url",
-      description: `Open ${url} and save the visible text.`,
-      tags: ["open", "url", "page"],
-      persist: false,
-      steps: [
-        { op: "open", url },
-        { op: "saveText", path: "/workspace/pages/page.txt", text: "{{title}}\n{{url}}\n\n{{pageText}}" },
-        { op: "output", text: "Saved {{title}} to /workspace/pages/page.txt" },
-      ],
-    };
-  }
-
+  // An explicit URL is the task, unless the prompt also asks to download an invoice.
+  if (urlMatch && !wantsInvoiceDownload(prompt)) return openUrlRecipe(urlMatch[0]);
+  if (wantsInvoiceDownload(prompt) || /\binvoice\b|\bdemo shop\b/.test(lower)) return invoiceRecipe();
+  if (/hacker news|\bycombinator\b|\bhn\b/.test(lower)) return hackerNewsRecipe();
+  if (urlMatch) return openUrlRecipe(urlMatch[0]);
   return null;
 }
 
-export function planRun(prompt: string, skills: Skill[], ctx: { serverUrl: string }): Plan | null {
-  const matched = matchSkill(skills, prompt);
-  if (matched) {
-    return {
-      source: "skill",
-      name: matched.name,
-      description: matched.description,
-      tags: matched.tags,
-      steps: parseProcedure(matched.procedure),
-      persist: false,
-    };
+export function planRun(prompt: string, skills: Skill[], ctx: { serverUrl: string; recipe?: string }): Plan | null {
+  if (!ctx.recipe) {
+    const matched = matchSkill(skills, prompt);
+    if (matched) {
+      return {
+        source: "skill",
+        name: matched.name,
+        description: matched.description,
+        tags: matched.tags,
+        steps: parseProcedure(matched.procedure),
+        persist: false,
+      };
+    }
   }
   const recipe = resolveRecipe(prompt, ctx);
   if (!recipe) return null;
@@ -111,7 +164,13 @@ export function planRun(prompt: string, skills: Skill[], ctx: { serverUrl: strin
 }
 
 const NO_RECIPE =
-  "No scripted recipe matches this task. The local adapter can download the latest demo shop invoice, summarize Hacker News, or open an explicit URL. Set OPENAI_API_KEY or ANTHROPIC_API_KEY for open-ended tasks.";
+  "No scripted recipe matches this task. The local adapter can download the latest demo shop invoice, summarize Hacker News, or open an explicit URL. Pass recipe on the run, or set OPENAI_API_KEY or ANTHROPIC_API_KEY for open-ended tasks.";
+
+function planError(code: "no_recipe" | "invalid_recipe", message: string): Error {
+  const error = new Error(message) as Error & { code: string };
+  error.code = code;
+  return error;
+}
 
 export const scriptedAdapter: CuaAdapter = {
   name: "local",
@@ -119,9 +178,17 @@ export const scriptedAdapter: CuaAdapter = {
   available: () => true,
   async run(input) {
     const existing = await input.skills.list();
-    const plan = planRun(input.prompt, existing, { serverUrl: input.serverUrl });
-    if (!plan) throw new Error(NO_RECIPE);
-    if (plan.source === "skill") input.log("log", `Reusing skill ${plan.name}`);
+    const plan = planRun(input.prompt, existing, { serverUrl: input.serverUrl, recipe: input.recipe });
+    if (!plan) {
+      throw planError(
+        input.recipe ? "invalid_recipe" : "no_recipe",
+        input.recipe ? `Recipe "${input.recipe}" does not apply to this prompt.` : NO_RECIPE,
+      );
+    }
+    input.log("plan", plan.source === "skill" ? `Reusing skill ${plan.name}` : `Using recipe ${plan.name}`, {
+      source: plan.source,
+      name: plan.name,
+    });
     const result = await runSteps(plan.steps, {
       computer: input.computer,
       files: input.files,

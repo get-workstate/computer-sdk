@@ -1,6 +1,8 @@
 import { ENVIRONMENT_CONFIG_KEYS, describeIntegrations } from "@workstate/integrations";
 import { LocalFiles, LocalShell } from "@workstate/runtime-local";
-import { defaultModel, describeAdapters, listAdapters } from "@workstate/model-adapters";
+import { defaultModel, describeAdapters, describeRecipes, listAdapters, RECIPE_IDS } from "@workstate/model-adapters";
+import { VERSION } from "./config.js";
+import { openApiDocument } from "./openapi.js";
 import type { HumanKind } from "@workstate/sdk";
 import type { Context, Hono } from "hono";
 import type { AppContext } from "./app.js";
@@ -57,6 +59,27 @@ export function registerApi(app: Hono, ctx: AppContext): void {
     await next();
     c.header("cache-control", "no-store");
   });
+
+  app.get("/api/health", (c) =>
+    c.json({
+      ok: true,
+      version: VERSION,
+      defaultModel: defaultModel(),
+    }),
+  );
+
+  app.get("/api/recipes", (c) =>
+    c.json({
+      model: "local/scripted",
+      precedence:
+        "An explicit http(s) URL selects open-url unless the prompt also asks to download an invoice. A recipe id on the run skips keyword matching. A saved skill still wins when no recipe id is set.",
+      modelPrecedence: "The model on the run overrides the environment config.model, which overrides the server default.",
+      recipes: describeRecipes(),
+    }),
+  );
+
+  app.get("/api/openapi.json", (c) => c.json(openApiDocument()));
+  app.get("/openapi.json", (c) => c.json(openApiDocument()));
 
   app.get("/api/adapters", (c) => {
     const available = new Map(listAdapters().map((adapter) => [adapter.name, adapter.available()]));
@@ -148,9 +171,13 @@ export function registerApi(app: Hono, ctx: AppContext): void {
 
   app.post("/api/environments/:ref/runs", async (c) => {
     const env = requireEnv(ctx, c.req.param("ref"));
-    const body = await readJson<{ prompt?: string; model?: string }>(c);
+    const body = await readJson<{ prompt?: string; model?: string; recipe?: string }>(c);
     if (!body.prompt?.trim()) throw httpError(400, "invalid_prompt", "A run needs a prompt.");
-    return c.json(ctx.runs.create(env, { prompt: body.prompt, model: body.model }), 201);
+    const recipe = body.recipe?.trim();
+    if (recipe && !RECIPE_IDS.includes(recipe as (typeof RECIPE_IDS)[number])) {
+      throw httpError(400, "invalid_recipe", `Unknown recipe. Use one of: ${RECIPE_IDS.join(", ")}.`);
+    }
+    return c.json(ctx.runs.create(env, { prompt: body.prompt, model: body.model, recipe }), 201);
   });
 
   app.post("/api/environments/:ref/human-requests", async (c) => {

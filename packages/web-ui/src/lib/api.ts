@@ -49,6 +49,7 @@ export interface RunRecord {
   model: string;
   status: RunStatus;
   error: string | null;
+  errorCode?: string | null;
   result: { text: string; artifacts?: string[] } | null;
   humanRequest: HumanRequest | null;
   createdAt: string;

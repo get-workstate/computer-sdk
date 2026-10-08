@@ -82,7 +82,12 @@ export function RunPage() {
           <p className="mt-1">{run.humanRequest.message}</p>
         </div>
       ) : null}
-      {run.error ? <p className="rounded-2xl border border-bad/30 bg-bad/5 p-4 text-sm text-bad">{run.error}</p> : null}
+      {run.error ? (
+        <p className="rounded-2xl border border-bad/30 bg-bad/5 p-4 text-sm text-bad">
+          {run.errorCode ? <span className="font-mono">{run.errorCode}: </span> : null}
+          {run.error}
+        </p>
+      ) : null}
       {run.result?.text ? <p className="rounded-2xl border border-line bg-card p-4 text-sm">{run.result.text}</p> : null}
       <section className="rounded-2xl border border-line bg-card p-4">
         <h2 className="font-medium">Events</h2>

@@ -14,6 +14,8 @@ import { WorkstateError } from "./http.js";
 export interface RunOptions {
   prompt: string;
   model?: string;
+  /** local/scripted recipe id from GET /api/recipes. Skips keyword matching. */
+  recipe?: string;
 }
 
 export interface RunHandlers {
@@ -100,12 +102,14 @@ export class Environment {
   async run(promptOrOptions: string | RunOptions, handlers?: RunHandlers): Promise<RunRecord> {
     const prompt = typeof promptOrOptions === "string" ? promptOrOptions : promptOrOptions.prompt;
     const model = typeof promptOrOptions === "string" ? undefined : promptOrOptions.model;
+    const recipe = typeof promptOrOptions === "string" ? undefined : promptOrOptions.recipe;
     if (!prompt.trim()) {
       throw new WorkstateError("A run needs a prompt.", { code: "invalid_prompt" });
     }
     const created = await this.client.post<RunRecord>(`/api/environments/${encodeURIComponent(this.name)}/runs`, {
       prompt,
       model,
+      recipe,
     });
     return this.waitForRun(created.id, handlers);
   }

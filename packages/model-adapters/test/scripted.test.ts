@@ -40,7 +40,11 @@ test("resolveRecipe knows the demo shop, Hacker News, explicit URLs, and nothing
   const explicit = resolveRecipe("Open https://example.com/report and save it", ctx);
   assert.equal(explicit?.name, "open-url");
   assert.equal(explicit?.persist, false);
+  assert.equal(resolveRecipe("Open http://127.0.0.1:4780/demo/shop and inspect the demo shop", ctx)?.name, "open-url");
+  assert.equal(resolveRecipe("Download the invoice at https://example.com/invoice.txt", ctx)?.name, "download-latest-invoice");
   assert.equal(resolveRecipe("Compose a symphony", ctx), null);
+  assert.equal(resolveRecipe("Open the status page", { ...ctx, recipe: "open-url" }), null);
+  assert.equal(resolveRecipe("Anything", { ...ctx, recipe: "summarize-hacker-news" })?.name, "summarize-hacker-news");
   assert.ok(invoice);
   const parsed = parseProcedure(JSON.stringify(invoice.steps));
   assert.equal(parsed.length, invoice.steps.length);
@@ -69,7 +73,10 @@ test("unknown tasks fail with a pointer toward a real model", async () => {
   const harness = createHarness(true);
   await assert.rejects(
     () => scriptedAdapter.run(input("Compose a symphony for brass", harness, memorySkills().skills)),
-    /No scripted recipe matches/,
+    (error: unknown) => {
+      assert.equal((error as { code?: string }).code, "no_recipe");
+      return true;
+    },
   );
 });
 
