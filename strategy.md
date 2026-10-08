@@ -63,6 +63,12 @@ All in the tree, none run with real keys. Full reference: `docs/integrations.md`
 - `pnpm install --offline` fails on optional peer metadata (`@1password/sdk`); install online.
 - The tmux `workstate-server` session ran node directly; `C-c` ended the session. Start it with a login shell and send the command, then `C-c` + resend to restart.
 
+## Capability labs, round 2 (2026-10-08)
+
+Durable copies, not in git: `/cursor/stores/self/docs/workstate-integration-lab/RESULTS-ROUND-2.md`.
+
+Checked live on port 4780 after the API change: invoice handoff plus skill replay (`lab4-billing`), explicit URL over the words "demo shop" plus forced Hacker News (`lab5-clerk`, `lab5-hn`), `invalid_recipe` / `no_recipe` / cancel (`lab6-guard`), shell+files, live frame, and Anchor `integration_not_configured` (`lab7-ops`, `lab7-anchor`), and `asTool()` plus a 1Password miss falling through to `needs_human` (`lab8-delegate`). The live socket path is `/ws/live/:name`. `env.run()` / `asTool().execute()` block until the run is terminal, so a handoff must be answered or cancelled from another request. Long-poll responses contain only events after `after`; clients have to accumulate them to see the `plan` event.
+
 ## Verified
 
 On this machine, 2026-10-06:

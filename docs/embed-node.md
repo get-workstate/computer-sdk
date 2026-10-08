@@ -17,7 +17,7 @@ pnpm add @workstate/sdk@file:../path/to/workstate/packages/sdk
 ```ts
 import { Workstate } from "@workstate/sdk";
 
-const workstate = new Workstate({ baseUrl: process.env.WORKSTATE_URL });
+const workstate = new Workstate({ url: process.env.WORKSTATE_URL });
 const acme = await workstate.environment("acme");
 
 export async function openReport(url: string) {
