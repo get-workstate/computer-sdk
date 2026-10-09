@@ -105,7 +105,7 @@ From the first three integration labs (`/cursor/stores/self/docs/workstate-integ
 - `RunRecord.errorCode` is stored on the run (`needs_human`, `no_recipe`, `invalid_recipe`, `declined`, adapter/setup codes such as `integration_not_configured`, otherwise `run_failed`). Error events include `{ code }`. A `plan` event includes `{ source, name }`.
 - Existing SQLite files gain `runs.error_code` via `PRAGMA table_info` + `ALTER TABLE`. New databases create the column.
 
-The copy-paste quickstart prompt and the numbered Quickstart both tell the customer to set `ANCHOR_API_KEY`. Local Chromium remains the fallback when that key is absent.
+The copy-paste quickstart prompt and the numbered Quickstart recommend that the customer set `ANCHOR_API_KEY`. Local Chromium remains the fallback when that key is absent.
 
 ## Next
 
