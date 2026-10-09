@@ -54,8 +54,12 @@
 <p align="center">Copy this prompt to your coding agent to get started.</p>
 
 ```text
-An Anchor API key is recommended: set it as ANCHOR_API_KEY on the Workstate server. Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }) and environment(name). Then connect that environment to the agent loop, either through the MCP server or through env.asTool() (openai, anthropic, or execute). That is the whole integration.
+Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }) and environment(name). Then connect that environment to the agent loop, either through the MCP server or through env.asTool() (openai, anthropic, or execute). That is the whole integration. An Anchor API key is recommended: set it as ANCHOR_API_KEY on the Workstate server.
 ```
+
+<p align="center">
+  <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session: browser, a sandbox desktop, filesystem, and session state." width="760" />
+</p>
 
 ---
 
@@ -120,10 +124,6 @@ With Anchor, `env.startAnchorDemonstration(...)` creates a secure manual-demonst
 ---
 
 
-
-<p align="center">
-  <img src="assets/how-workstate-works.png" alt="How Workstate works. Your server calls the control plane API. An existing agent reaches Workstate through MCP or the SDK, next to search, CRM, email, calendar, and internal APIs. Workstate is a control plane (orchestration, environment and session lifecycle, auth credential onboarding, memory and reusable skills, sub-agents) plus a computer environment (browser and desktop, files and shell, human demonstration, live session) over a computer session (browser, desktop, filesystem, session state)." width="760" />
-</p>
 
 ## Native integrations ecosystem
 

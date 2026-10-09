@@ -105,7 +105,7 @@ From the first three integration labs (`/cursor/stores/self/docs/workstate-integ
 - `RunRecord.errorCode` is stored on the run (`needs_human`, `no_recipe`, `invalid_recipe`, `declined`, adapter/setup codes such as `integration_not_configured`, otherwise `run_failed`). Error events include `{ code }`. A `plan` event includes `{ source, name }`.
 - Existing SQLite files gain `runs.error_code` via `PRAGMA table_info` + `ALTER TABLE`. New databases create the column.
 
-The copy-paste quickstart prompt and the numbered Quickstart recommend that the customer set `ANCHOR_API_KEY`. Local Chromium remains the fallback when that key is absent.
+The copy-paste quickstart prompt recommends `ANCHOR_API_KEY` at the end, after the SDK and agent-loop instructions. The numbered Quickstart still starts with that key. Local Chromium remains the fallback when that key is absent. `assets/how-workstate-works.png` (the "How Workstate works" diagram, with Sandbox wrapping Desktop inside Computer Session) sits above `## Why Workstate`, immediately after the prompt. `## Native integrations ecosystem` follows the Quickstart.
 
 The four README video titles are Secure auth with computer-use, Bot-detection bypass, Learn from human demonstration, and Memorize trajectories. They link to `docs/auth-handoff/README.md`, `docs/bot-detection/README.md`, `docs/takeover-capture/README.md`, and `docs/skill-replay/README.md`. The bot-detection page must not describe `cap-bot` as a captcha solve. That clip scrolls Hacker News. Stealth, captcha, and fingerprinting are Anchor's, selected by `ANCHOR_API_KEY`.
 
