@@ -33,18 +33,18 @@
 <table width="520">
   <tr>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="240" /></a><br /><b>Auth handoff</b>
+      <a href="assets/cap-auth.mp4"><img src="assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="240" /></a><br /><b><a href="./docs/auth-handoff/README.md">Auth handoff</a></b>
     </td>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="240" /></a><br /><b>Bot-detection bypass</b>
+      <a href="assets/cap-bot.mp4"><img src="assets/cap-bot.gif" alt="A browser scrolling the Hacker News front page" width="240" /></a><br /><b><a href="./docs/bot-detection/README.md">Bot-detection bypass</a></b>
     </td>
   </tr>
   <tr>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="240" /></a><br /><b>Takeover capture</b>
+      <a href="assets/cap-learn.mp4"><img src="assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="240" /></a><br /><b><a href="./docs/takeover-capture/README.md">Takeover capture</a></b>
     </td>
     <td align="center" width="50%" valign="bottom">
-      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="240" /></a><br /><b>Skill replay</b>
+      <a href="assets/cap-fast.mp4"><img src="assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="240" /></a><br /><b><a href="./docs/skill-replay/README.md">Skill replay</a></b>
     </td>
   </tr>
 </table>
@@ -415,7 +415,7 @@ packages/cli              the workstate command
 packages/web-ui           React console
 ```
 
-Start with `[docs/concepts.md](./docs/concepts.md)`, then `[docs/architecture.md](./docs/architecture.md)`, `[docs/http-api.md](./docs/http-api.md)`, `[docs/embed-node.md](./docs/embed-node.md)`, `[docs/hitl.md](./docs/hitl.md)`, `[docs/skills.md](./docs/skills.md)`, and `[docs/integrations.md](./docs/integrations.md)`.
+Start with `[docs/concepts.md](./docs/concepts.md)`, then `[docs/architecture.md](./docs/architecture.md)`, `[docs/http-api.md](./docs/http-api.md)`, `[docs/embed-node.md](./docs/embed-node.md)`, `[docs/hitl.md](./docs/hitl.md)`, `[docs/skills.md](./docs/skills.md)`, and `[docs/integrations.md](./docs/integrations.md)`. The four clips expand in [Auth handoff](./docs/auth-handoff/README.md), [Bot-detection bypass](./docs/bot-detection/README.md), [Takeover capture](./docs/takeover-capture/README.md), and [Skill replay](./docs/skill-replay/README.md).
 
 > Workstate has no authentication yet. Keep it on localhost or a private network.
 
