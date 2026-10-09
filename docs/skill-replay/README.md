@@ -1,4 +1,4 @@
-# Skill replay
+# Memorize trajectories
 
 <p>
   <a href="../../assets/cap-fast.mp4"><img src="../../assets/cap-fast.gif" alt="The browser jumps from a web page straight to a saved invoice" width="480" /></a>
@@ -37,4 +37,4 @@ A `plan` event on the run says which memory was used:
 | `skill` | A local procedure under `/workstate/skills` |
 | `recipe` | A built-in `local/scripted` recipe, which may then be saved |
 
-The step language for local skills is in [Skills](../skills.md). How a demonstration becomes an Anchor task is in [Takeover capture](../takeover-capture/README.md).
+The step language for local skills is in [Skills](../skills.md). How a demonstration becomes an Anchor task is in [Learn from human demonstration](../takeover-capture/README.md).

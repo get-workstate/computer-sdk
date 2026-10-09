@@ -1,4 +1,4 @@
-# Auth handoff
+# Secure auth with computer-use
 
 <p>
   <a href="../../assets/cap-auth.mp4"><img src="../../assets/cap-auth.gif" alt="A browser sign-in page, with a password typed in and the orders screen opening after" width="480" /></a>

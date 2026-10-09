@@ -1,4 +1,4 @@
-# Takeover capture
+# Learn from human demonstration
 
 <p>
   <a href="../../assets/cap-learn.mp4"><img src="../../assets/cap-learn.gif" alt="A person signs in on a browser page and opens an invoice" width="480" /></a>
@@ -36,4 +36,4 @@ Without Anchor, the person still drives the live view. The agent, or `local/scri
 
 The difference: Anchor stores the demonstration as a hosted task. Local stores a procedure next to the environment's other files.
 
-See [Human handoff](../hitl.md) for the pause and resume states, and [Skill replay](../skill-replay/README.md) for what happens on the next run.
+See [Human handoff](../hitl.md) for the pause and resume states, and [Memorize trajectories](../skill-replay/README.md) for what happens on the next run.

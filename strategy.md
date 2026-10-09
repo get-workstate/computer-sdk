@@ -107,7 +107,7 @@ From the first three integration labs (`/cursor/stores/self/docs/workstate-integ
 
 The copy-paste quickstart prompt and the numbered Quickstart recommend that the customer set `ANCHOR_API_KEY`. Local Chromium remains the fallback when that key is absent.
 
-The four README video titles link to dedicated pages: `docs/auth-handoff/README.md`, `docs/bot-detection/README.md`, `docs/takeover-capture/README.md`, and `docs/skill-replay/README.md`. The bot-detection page must not describe `cap-bot` as a captcha solve. That clip scrolls Hacker News. Stealth, captcha, and fingerprinting are Anchor's, selected by `ANCHOR_API_KEY`.
+The four README video titles are Secure auth with computer-use, Bot-detection bypass, Learn from human demonstration, and Memorize trajectories. They link to `docs/auth-handoff/README.md`, `docs/bot-detection/README.md`, `docs/takeover-capture/README.md`, and `docs/skill-replay/README.md`. The bot-detection page must not describe `cap-bot` as a captcha solve. That clip scrolls Hacker News. Stealth, captcha, and fingerprinting are Anchor's, selected by `ANCHOR_API_KEY`.
 
 ## Next
 
