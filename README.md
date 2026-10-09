@@ -54,7 +54,7 @@
 <p align="center">Copy this prompt to your coding agent to get started.</p>
 
 ```text
-Set ANCHOR_API_KEY on the Workstate server so the customer provides an Anchor API key. Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }) and environment(name). Then connect that environment to the agent loop, either through the MCP server or through env.asTool() (openai, anthropic, or execute). That is the whole integration.
+Provide an Anchor API key and set it as ANCHOR_API_KEY on the Workstate server. Connect @workstate/sdk to the Workstate control plane with new Workstate({ url }) and environment(name). Then connect that environment to the agent loop, either through the MCP server or through env.asTool() (openai, anthropic, or execute). That is the whole integration.
 ```
 
 ---
